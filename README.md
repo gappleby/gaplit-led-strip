@@ -64,10 +64,10 @@ There are subtle little settings that I will eventually document. Try out the gl
 ## Tested ESP8266 Boards
 Technically any ESP8266 board that will run sonoff-tasmota will run this firmware.
 
-* Wemos D1 R2 > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/2.0.1/gaplit-led-strip.ino.d1_mini.bin)
+* Wemos D1 R2 > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.ino.d1_mini.bin)
   This project was initially built for the Wemos D1 R2 board to drive a WS2812B LED Strip to provide a set of virtual lights. By default it uses PIN D1 as a signal PIN for the WS2812B.  Set the GPIO configuration to look like these in the [General Settings](http://www.gappleby.com/light/GapLit/screen2-wemos.png).
  
-* Sonoff > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/2.0.1/gaplit-led-strip.ino.generic.bin)
+* Sonoff > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.ino.generic.bin)
   It can also be configured to be used with a Sonoff Basic (and POW/Dual/etc) where the spare GPIO 14 pin is used to control the LED Strip. With the Sonoff, you can also the relay to power on and off to control a power supply to the LED Strip. This will save power when all the LED light segments are off. Set the GPIO configuration to look like these in the [General Settings](http://www.gappleby.com/light/GapLit/screen2-sonoff.png).
 
 ## LED Strip
