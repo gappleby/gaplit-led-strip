@@ -1,0 +1,36 @@
+  - platform: mqtt
+    id: "300021"
+    name: "Coffee Bench Light"
+    state_topic: "stat/gaplit/power1"
+    command_topic: "cmnd/gaplit/power1"
+    qos: 1
+    payload_on: "ON"
+    payload_off: "OFF"
+    retain: false
+  - platform: mqtt
+    id: "300022"
+    name: "Cup Sink Light"
+    state_topic: "stat/gaplit/power2"
+    command_topic: "cmnd/gaplit/power2"
+    qos: 1
+    payload_on: "ON"
+    payload_off: "OFF"
+    retain: false
+  - platform: mqtt
+    id: "300023"
+    name: "Bench Light"
+    state_topic: "stat/gaplit/power3"
+    command_topic: "cmnd/gaplit/power3"
+    qos: 1
+    payload_on: "ON"
+    payload_off: "OFF"
+    retain: false
+  - platform: mqtt
+    id: "300024"
+    name: "Overhead Cupboard"
+    state_topic: "stat/gaplit/power4"
+    command_topic: "cmnd/gaplit/power4"
+    qos: 1
+    payload_on: "ON"
+    payload_off: "OFF"
+    retain: false
