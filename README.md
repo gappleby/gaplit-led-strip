@@ -14,10 +14,10 @@ Configure an ESP8266 module to control up to 8 virtual light segments in a singl
 ## Screen Shots
 - [Home](http://www.gappleby.com/light/GapLit/screen1.png)
  ![picture alt](http://www.gappleby.com/light/GapLit/screen1.png "GapLit LED Strip")
-- [General Settings](http://www.gappleby.com/light/GapLit/screen2.png) 
-- [Light Settings](http://www.gappleby.com/light/GapLit/screen4.png) 
-- [MQTT Summary](http://www.gappleby.com/light/GapLit/screen5.png) 
-- [Update Firmware](http://www.gappleby.com/light/GapLit/screen6.png) 
+- [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2.png?raw=true) 
+- [Light Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen4.png?raw=true) 
+- [MQTT Summary](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen5.png?raw=true)
+- [Update Firmware](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen6.png?raw=true)
 
 ## Settings
 
@@ -44,7 +44,7 @@ MQTT settings are configure under the "General Settings". Make sure you configur
 
 The MQTT Summary menu shows a complete summary of all the mqtt settings. Configure the same as you would for tasmota firmware, but with the states and topics are displayed on this page.  
 
-See example Home Assistant MQTT configuration file [lights.yaml](https://www.gappleby,com/light/GapLit/lights.yaml) on how these values can be used. 
+See example Home Assistant MQTT configuration file [lights.yaml](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/lights.yaml?raw=true) on how these values can be used. 
 
 ### Other settings
 
@@ -65,10 +65,10 @@ There are subtle little settings that I will eventually document. Try out the gl
 Technically any ESP8266 board that will run sonoff-tasmota will run this firmware.
 
 * Wemos D1 R2 > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.ino.d1_mini.bin)
-  This project was initially built for the Wemos D1 R2 board to drive a WS2812B LED Strip to provide a set of virtual lights. By default it uses PIN D1 as a signal PIN for the WS2812B.  Set the GPIO configuration to look like these in the [General Settings](http://www.gappleby.com/light/GapLit/screen2-wemos.png).
+  This project was initially built for the Wemos D1 R2 board to drive a WS2812B LED Strip to provide a set of virtual lights. By default it uses PIN D1 as a signal PIN for the WS2812B.  Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-wemos.png?raw=true).
  
 * Sonoff > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.ino.generic.bin)
-  It can also be configured to be used with a Sonoff Basic (and POW/Dual/etc) where the spare GPIO 14 pin is used to control the LED Strip. With the Sonoff, you can also the relay to power on and off to control a power supply to the LED Strip. This will save power when all the LED light segments are off. Set the GPIO configuration to look like these in the [General Settings](http://www.gappleby.com/light/GapLit/screen2-sonoff.png).
+  It can also be configured to be used with a Sonoff Basic (and POW/Dual/etc) where the spare GPIO 14 pin is used to control the LED Strip. With the Sonoff, you can also the relay to power on and off to control a power supply to the LED Strip. This will save power when all the LED light segments are off. Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-sonoff.png?raw=true).
 
 ## LED Strip
 
