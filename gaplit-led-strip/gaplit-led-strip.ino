@@ -515,6 +515,8 @@ void turnLightOn(int n)
   if (relay_state_current == RELAY_OFF) {
     return;
   }
+
+  if (settings.settings.ls_density[n] <= 0) settings.settings.ls_density[n] = 1;
   
   for (int m = settings.settings.ls_startPixel[n]; m <= settings.settings.ls_endPixel[n]; m += settings.settings.ls_density[n]) {
     CRGB cOn;  cOn.r = settings.settings.ls_colourOn[n][0]; cOn.g = settings.settings.ls_colourOn[n][1]; cOn.b = settings.settings.ls_colourOn[n][2];
@@ -534,6 +536,8 @@ void turnLightOff(int n)
   if (relay_state_current == RELAY_OFF) {
     return;
   }
+
+  if (settings.settings.ls_density[n] <= 0) settings.settings.ls_density[n] = 1;
   
   for (int m = settings.settings.ls_startPixel[n]; m <= settings.settings.ls_endPixel[n]; m += settings.settings.ls_density[n]) {
     CRGB cOff; cOff.r = settings.settings.ls_colourOff[n][0]; cOff.g = settings.settings.ls_colourOff[n][1]; cOff.b = settings.settings.ls_colourOff[n][2];

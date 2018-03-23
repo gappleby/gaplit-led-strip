@@ -508,6 +508,14 @@ void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
     _settings->settings.ls_colourOff[m][1] = request->arg( "coffG" ).toInt();
     _settings->settings.ls_colourOff[m][2] = request->arg( "coffB" ).toInt();
 
+    // Fix logic
+    if (_settings->settings.ls_topicIndex[m] < 0) _settings->settings.ls_topicIndex[m] = 0;
+    if (_settings->settings.ls_startPixel[m] < 0) _settings->settings.ls_startPixel[m] = 1;
+    if (_settings->settings.ls_endPixel[m] >= _settings->settings.ls_pixels) _settings->settings.ls_endPixel[m] = _settings->settings.ls_pixels - 1;
+    if (_settings->settings.ls_density[m] <= 0) _settings->settings.ls_density[m] = 1;
+    if (_settings->settings.ls_powerOnState[m] < 0) _settings->settings.ls_powerOnState[m] = 0;
+    if (_settings->settings.ls_powerOnState[m] > 1) _settings->settings.ls_powerOnState[m] = 1;
+
     processed = true;
   }
 
@@ -568,11 +576,13 @@ void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
 
       case 28:
         _settings->settings.ls_pixels = getHttpIntParam(request, "value", 0, 500, _settings->settings.ls_pixels);
+        if (_settings->settings.ls_pixels < 0) _settings->settings.ls_pixels = 0;
         break;
         
 
       case 30:
         _settings->settings.ls_tracerPixels = getHttpIntParam(request, "value", 0, 255, _settings->settings.ls_tracerPixels);
+        if (_settings->settings.ls_tracerPixels < 0) _settings->settings.ls_tracerPixels = 0;
         break;
 
       case 31:
