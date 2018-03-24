@@ -26,25 +26,49 @@ The default login is "admin" with a blank password. This will be required for al
 
 ### WiFi
 
-This firmware turns into an access point on first load. Just connect to WiFi access point "gaplit-nnnn" and configure your WiFi settings. 
+This firmware turns into an access point on first load. Just connect to WiFi access point "gaplit-nnnn" and configure your WiFi settings.
+
 After it reboots onto the network, use your router to find the DHCP assigned IP address.
 
 ### General Settings
 
-After you have the ESP8266 connected to your network you should set the "Max Strip LEDs" to the maximum number of LEDs and confirm the GPIO "Led Strip PIN Out" value (see tested examples below for sample pin values).
-Click the "Apply" button then scroll down the bottom and click the "Save" button to commit the settings to persistent storage. 
+After you have the ESP8266 connected to your network, you should 
+- Select the "General Settings" menu
+- Set the "Max Strip LEDs" to the maximum number of LEDs; and 
+- Confirm the GPIO "Led Strip PIN Out" value 
+  - See the "Tested Modules" example setting screens for tested values.
+- Click the "Apply" button to set the values in memory
+- Scroll down the bottom and click the "Save" button to commit the settings to persistent storage. 
+
 This is a good time to reboot the ESP8266 to load these critical settings.
 
 ### Light Settings
 
-Select Light Settings menu item, next select Light 1 and then configure the MQTT topic (even if you are not using MQTT yet) and set it to a small positive number, e.g. 1. 
-Next set the Start and End Pixel settings. See the Light Settings image above for sample values. Apply, then Save. 
-Click the Home menu option and you should now have a "LS Light 1" available to click on and off. No need to reboot.
+A virtual lights need to be setup before you see anything on the LED strip.  Once setup, they can be used via the webui, but for MQTT, you need to reboot to reload the MQTT client configuration.
+
+To set up a virtual light:
+- Select Light Settings menu
+- In Group "Light 1"
+    - Set the MQTT Topic to 1 (even if you are not using MQTT yet) to enable the light.
+    - Set the "Start Pixel" and "End Pixel" settings. See the "Light Settings" image above for sample values. 
+- Click the "Apply" button to set the values in memory
+- Scroll down the bottom and click the "Save" button to commit the settings to persistent storage. 
+
+Click the Home menu option and you should now have an "LS Light 1" available to click on and off. No need to reboot yet as we have MQTT to configure.
 
 ### Set MQTT Settings
 
-MQTT settings are configure under "General Settings". Make sure you configure at least the MQTT Enabled = 1, MQTT Host = ip address of MQTT broker or HASS server, MQTT User and Password. 
-Apply, then Save. Then Reboot to load these ssettings.
+MQTT settings are configured under "General Settings".  You should have an MQTT broker already configure or use the one built in your automation server like Home Assistant.
+
+- Select "General Settings" menu
+- In Group "MQTT Settings"
+    - Set the MQTT Enabled = 1
+    - Set the MQTT Host = ip address of MQTT broker (or Home Assistant)
+    - Set the MQTT User and MQTT Password. 
+- Click the "Apply" button to set the values in memory
+- Scroll down the bottom and click the "Save" button to commit the settings to persistent storage. 
+
+Reboot to load these settings.  This can be done via the "Reboot" menu. (hint: click the reboot button)
 
 ### MQTT Summary
 
@@ -58,9 +82,16 @@ Refer example Home Assistant MQTT configuration file [lights.yaml](https://githu
 There are other subtle settings that I will eventually document.
 Try out the global Tracer Effect by settings "Tracer LEDs" value to 3 and apply. 
 Change the "Density" of a virtual light and power the light on / off (might be better to turn off the light first). 
-Set an Off Colour for the virtual light. 
+Set an "Off Color" for the virtual light. 
 
 Try out different colours for the virtual light. Use overlapping the start and end light LEDs of different virtual lights.
+
+There is also a couple of other URLs not available in the menus.  
+- http://{deviceIpAddress}/erasesettings 
+  Wait 1 minutes before powering off/on.
+- http://{deviceIpAddress}/stats 
+  Returns a list of values of ESP8266 stats.
+
 
 ## Possible Applications
 
@@ -117,14 +148,14 @@ When in doubt - follow the advice on the [Sonoff-Tasmota](https://github.com/are
 
 Only Flash Mode DOUT is supported. Do not use Flash Mode DIO / QIO / QOUT as it might seem to brick your device.
 
-See [Wiki](https://github.com/arendst/Sonoff-Tasmota/wiki/Theo's-Tasmota-Tips) for background information.
+See [Sonoff-Tasmota Wiki](https://github.com/arendst/Sonoff-Tasmota/wiki/Theo's-Tasmota-Tips) for background information on compilation issues.
 
 ## Credit
 
 - [Sonoff-Tasmota](https://github.com/arendst/Sonoff-Tasmota) - the default firmware I use in all my Sonoff devices. 
   I actually loaded Tasmota first (using SonOTA), then replaced it with this firmware.  
   GapLit led Strip project started as a branch of the Sonoff-Tasmota project, then I realised I would break too much of Theo Arends fine work. 
-  I did reuse some of his settings code originally, but unfortunately it is no longer compatible with his settings offsets.
+  Though I did reuse some of his settings code, unfortunately the settings layout is no longer compatible with his settings' offsets.
 
 ## Future Features
 
