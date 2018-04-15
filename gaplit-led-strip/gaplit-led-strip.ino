@@ -139,6 +139,9 @@ void setup() {
   // Set the wifi host name.  Unless overridden composed using MAC address
   WiFi.hostname(host_name);
 
+  initializeRelay();
+  initializeLightSegments();
+
   // Set up the MQTT Client
   setupMqtt();
 
@@ -153,10 +156,6 @@ void setup() {
 
   MDNS.begin(host_name);
   MDNS.addService("http", "tcp", 80);
-
-  initializeRelay();
-
-  initializeLightSegments();
 
   // Publish initial state
   mqttResendTimer.attach(STATUS_RESEND_PERIOD / 1000, publishLightStates);
@@ -222,6 +221,7 @@ void reloadLightSegment(int n) {
     ->setIndex(n)
     ->setStartEndPixel(settings.settings.ls_startPixel[n], settings.settings.ls_endPixel[n])
     ->setMqttId(settings.settings.ls_topicIndex[n])
+    ->setDensity(settings.settings.ls_density[n])
     ->setSerialDebug(false);
 
     lightSegment->setLightState(false);
@@ -273,11 +273,11 @@ void transitionLeds()
   relayControl.update();
 
   if (!relayControl.isPowerSteady())  {
-    if (debug_serial_output) Serial.printf("\nRelay : Power OFF");
+    if (settings.getSerialLogLevel() > 2) Serial.printf("\nRelay : Power OFF");
     return;
   }
 
-  if (debug_serial_output) Serial.printf("\nRelay : Power ON");
+  if (settings.getSerialLogLevel() > 2) Serial.printf("\nRelay : Power ON");
 
 
   bool updateRequired = false;
@@ -695,6 +695,7 @@ void onWifiConnect(const WiFiEventStationModeGotIP & event) {
 void onMqttConnect(bool sessionPresent) {
   if (debug_serial_output) Serial.printf("\nMQTT Connect : Acknowledged. SessionPresent: %s", sessionPresent ? "yes" : "no");
   resubscribeTopics();
+  publishLightStates();
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
