@@ -57,8 +57,9 @@ class LightSegment {
       return density;
     }
 
-    void setDensity(int density) {
+    auto setDensity(int density) {
       this->density = density;
+      return this;
     }
 
     auto setNumPixels(int n) {
