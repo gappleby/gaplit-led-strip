@@ -13,8 +13,8 @@
 
     You should have received a copy of the GNU Lesser General Public License
     along with "GapLit Led Strip".  If not, see <http://www.gnu.org/licenses/>.
- */
- #ifndef __LocalWebsite_H_
+*/
+#ifndef __LocalWebsite_H_
 #define __LocalWebsite_H_
 
 class AsyncWebServer;

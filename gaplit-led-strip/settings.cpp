@@ -13,8 +13,8 @@
 
     You should have received a copy of the GNU Lesser General Public License
     along with "GapLit Led Strip".  If not, see <http://www.gnu.org/licenses/>.
- */
- #include <Arduino.h>
+*/
+#include <Arduino.h>
 
 #include "StreamString.h"
 #include "settings.h"
@@ -346,7 +346,7 @@ void Settings::loadDefaultsSet1()
   settings.relay_gpio = RELAY_GPIO_PIN_DEFAULT;
   settings.relay_start_delay = RELAY_START_DELAY;
   settings.relay_stop_delay = RELAY_STOP_DELAY;
-  
+
 
   strlcpy(settings.web_user, WEB_USERNAME, sizeof(settings.web_user));
   strlcpy(settings.web_password, WEB_PASSWORD, sizeof(settings.web_password));
@@ -369,6 +369,7 @@ void Settings::loadDefaultsSet1()
     settings.ls_startPixel[n] = 0;
     settings.ls_endPixel[n] = 0;
     settings.ls_density[n] = 1;
+    settings.ls_transition[n] = 0;
     settings.ls_colourOn[n][0] = 255;
     settings.ls_colourOn[n][1] = 255;
     settings.ls_colourOn[n][2] = 255;
@@ -500,6 +501,13 @@ void Settings::dumpSettings() {
       settings.ls_colourOn[n][0], settings.ls_colourOn[n][1], settings.ls_colourOn[n][2],
       settings.ls_colourOff[n][0], settings.ls_colourOff[n][1], settings.ls_colourOff[n][2]);
   }
+}
+
+byte Settings::getSerialLogLevel() {
+  return settings.seriallog_level;
+}
+Settings *Settings::setSerialLogLevel(byte logLevel) {
+  settings.seriallog_level = logLevel; return this;
 }
 
 

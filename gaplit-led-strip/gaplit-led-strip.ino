@@ -13,9 +13,10 @@
 
     You should have received a copy of the GNU Lesser General Public License
     along with "GapLit Led Strip".  If not, see <http://www.gnu.org/licenses/>.
- */
- 
+*/
+
 #include <core_version.h>
+#include <list>
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>          // https://github.com/esp8266/Arduino
 #else
@@ -32,8 +33,12 @@
 
 #include <Adafruit_NeoPixel.h>    // https://github.com/adafruit/Adafruit_NeoPixel
 
-#include "settings.h"
-#include "localwebsite.h"
+#include "settings.h"             // 
+#include "localwebsite.h"         //
+
+#include "lightsegment.h"         // LightSegment logic
+#include "coloredlightsegment.h"  // Colored Light Segment with transition logic
+#include "relaycontrol.h"         // Relay control
 
 char host_name[33];
 char mqtt_client[33];
@@ -46,26 +51,16 @@ int reboot_counter = REBOOT_DISABLED;
 int erase_flash_counter = ERASE_FLASH_DISABLED;
 
 // Relay On/Off states and registers
-#define RELAY_OFF 0
-#define RELAY_ON  1
-int relay_state_current = RELAY_OFF;
-int relay_state_next = RELAY_OFF;
-uint32_t relay_change_after = 0;
+RelayControl relayControl;
 
 // NeoPixel setup
-#define MAX_NUM_LEDS 500
-typedef struct _CRGB {
-  byte r;  byte b;  byte g;
-} CRGB;
-CRGB leds[MAX_NUM_LEDS];
-CRGB targetLeds[MAX_NUM_LEDS];
+std::list<std::shared_ptr<LightSegment>> lightSegments;
+BlackWhiteLightSegment LIGHTSEGMENT_NULL;
+Ticker updateLightSegmentsTimer;
+
 Adafruit_NeoPixel stripLeds = Adafruit_NeoPixel();
 
-//LightConfiguration lights[LIGHT_SEGMENTS_MAX];
-bool currentState[LIGHT_SEGMENTS_MAX];
-
 const long STATUS_RESEND_PERIOD =  60000L;
-long lastStatusSent = millis();
 
 // Prototypes
 void mqttCallback(char* topic, char* payload, size_t length, size_t index, size_t total);
@@ -94,10 +89,16 @@ WiFiClient wifiClient;
 // Initialize MQTT
 AsyncMqttClient mqttClient;
 Ticker mqttReconnectTimer;
+Ticker mqttResendTimer;
+
+// Led Blink timer
+Ticker blinkTimer;
+
+// Debug to Serial Flag
+bool debug_serial_output = false;
 
 WiFiEventHandler wifiConnectHandler;
 WiFiEventHandler wifiDisconnectHandler;
-// Ticker wifiReconnectTimer;
 
 Settings settings;
 
@@ -109,22 +110,25 @@ void setup() {
   settings.load();
   settings.loadDelta();
 
-  // Don't bother to dump the settings normally. 
-  // Really just used to diagnose upgrade issues between 
-  // version where the config values have changed.
-  //settings.dumpSettings();
+  debug_serial_output = settings.getSerialLogLevel() > 0;
 
-  blinkLed(1, 100);
+  // Don't bother to dump the settings normally.
+  // Really just used to diagnose upgrade issues between
+  // version where the config values have changed.
+  if (debug_serial_output) {
+    settings.dumpSettings();
+  }
+
+  blinkTimer.attach(0.5, blinkLedEvent);
+  blinkLed(5, 100);
 
   // Configure settings
   settings.composeSetting(mqtt_client, settings.settings.mqtt_client, sizeof(mqtt_client));
   settings.composeSetting(mqtt_topic, settings.settings.mqtt_topic, sizeof(mqtt_topic));
   settings.getHostname(host_name, sizeof(host_name));
 
-  // Setup PINs
+  // Setup LightStrip
   if (settings.settings.status_light_gpio >= 0) pinMode(settings.settings.status_light_gpio, OUTPUT);
-  if (settings.settings.relay_gpio >= 0) pinMode(settings.settings.relay_gpio, OUTPUT);
-
   // stripLeds = Adafruit_NeoPixel(settings.settings.ls_pixels, settings.settings.ls_gpio, NEO_GRB + NEO_KHZ800);
   stripLeds.updateType(NEO_GRB + NEO_KHZ800);
   stripLeds.updateLength(settings.settings.ls_pixels);
@@ -150,11 +154,15 @@ void setup() {
   MDNS.begin(host_name);
   MDNS.addService("http", "tcp", 80);
 
-  initialiseLedBuffers();
+  initializeRelay();
+
+  initializeLightSegments();
 
   // Publish initial state
-  lastStatusSent -= (STATUS_RESEND_PERIOD - 15000L);
+  mqttResendTimer.attach(STATUS_RESEND_PERIOD / 1000, publishLightStates);
 
+  // Trigger the light segments
+  updateLightSegmentsTimer.attach(0.02, transitionLeds);
 
 }
 
@@ -163,10 +171,6 @@ void loop() {
   reconnectWifi();
 
   processBackgroundFlags();
-
-  publishLightStates();
-
-  transitionLeds();
 
 }
 
@@ -182,35 +186,69 @@ void setupMqtt() {
   mqttClient.setServer(settings.settings.mqtt_host, settings.settings.mqtt_port);
 }
 
-void initialiseLedBuffers() {
-  // Initialise the LEDs.  This is required to ensure that any transitions will occur.
-  for (int l = 0; l < settings.settings.ls_pixels; l++)
-  {
-    leds[l].r = 1; leds[l].g = 1; leds[l].b = 1;
-    targetLeds[l].r = 0; targetLeds[l].g = 0; targetLeds[l].b = 0;
-  }
+void initializeRelay() {
+  relayControl.setStartDelayTime( settings.settings.relay_start_delay );
+  relayControl.setEndDelayTime( settings.settings.relay_stop_delay );
+  relayControl.setGpioPin( settings.settings.relay_gpio );
+}
 
-  // Load configuration
-  for (int n = 0; n < LIGHT_SEGMENTS_MAX ; n++)
-  {
-    currentState[n] = false;
+void initializeLightSegments() {
 
-    if (settings.settings.ls_topicIndex[n] == 0) {
-      continue;
-    }
+  // Load the configured light segments
 
-    // Turn all the lights on
-    if (settings.settings.ls_powerOnState[n] > 0) {
-      turnLightOn(n);
+  for (int n = 0; n < LIGHT_SEGMENTS_MAX ; n++)  {
+    if (settings.settings.ls_topicIndex[n] > 0) {
+      reloadLightSegment(n);
+      if (settings.settings.ls_powerOnState[n]) {
+        turnLightOn(n);
+      }
     }
   }
+}
+
+void reloadLightSegment(int n) {
+
+  if (settings.settings.ls_topicIndex[n] > 0) {
+    std::shared_ptr<LightSegment> lightSegment;
+
+    std::shared_ptr<ColoredLightSegment> colorLs(new ColoredLightSegment());
+    colorLs->setPixelOnColor( { settings.settings.ls_colourOn[n][0], settings.settings.ls_colourOn[n][1], settings.settings.ls_colourOn[n][2]} );
+    colorLs->setPixelOffColor( { settings.settings.ls_colourOff[n][0], settings.settings.ls_colourOff[n][1], settings.settings.ls_colourOff[n][2]} );
+    colorLs->setTransitionType(settings.settings.ls_transition[n]);
+    lightSegment = colorLs;
+
+    lightSegment
+    ->setState(INIT)
+    ->setIndex(n)
+    ->setStartEndPixel(settings.settings.ls_startPixel[n], settings.settings.ls_endPixel[n])
+    ->setMqttId(settings.settings.ls_topicIndex[n])
+    ->setSerialDebug(false);
+
+    lightSegment->setLightState(false);
+    lightSegment->reset();
+    lightSegments.push_back(lightSegment);
+  }
+
+  // Remove the old entry for that setting index
+  for (auto ls : lightSegments) {
+    if (ls->getIndex() == n && ls->isActive()) {
+      ls->setState(RETIRED);
+    }
+  }
+
+  // Active the new entry for that setting index
+  for (auto ls : lightSegments) {
+    if (ls->getIndex() == n && ls->getState() == INIT) {
+      ls->setState(ACTIVE);
+    }
+  }
+
 }
 
 
 /**
    LED soft on/off logic (and tracer effect)
 */
-long transitionTimer = millis();
 #define TRANSITION_DELAY 50L
 int last_tracerPixel = -1;
 
@@ -227,62 +265,88 @@ int blendValue(int original, int target)
   }
   return c;
 }
+
 void transitionLeds()
 {
-  if (millis() < transitionTimer)
+
+  // Update the relay state
+  relayControl.update();
+
+  if (!relayControl.isPowerSteady())  {
+    if (debug_serial_output) Serial.printf("\nRelay : Power OFF");
     return;
-
-  bool showLeds = false;
-
-  for (int n = 0; n < settings.settings.ls_pixels; n++)
-  {
-    if (leds[n].r != targetLeds[n].r)  {
-      leds[n].r = blendValue(leds[n].r, targetLeds[n].r);
-      showLeds = true;
-    }
-
-    if (leds[n].g != targetLeds[n].g)  {
-      leds[n].g = blendValue(leds[n].g, targetLeds[n].g);
-      showLeds = true;
-    }
-
-    if (leds[n].b != targetLeds[n].b)  {
-      leds[n].b = blendValue(leds[n].b, targetLeds[n].b);
-      showLeds = true;
-    }
   }
 
-  // Set the non-specific light tracer
-  if (settings.settings.ls_tracerPixels > 0) {
+  if (debug_serial_output) Serial.printf("\nRelay : Power ON");
 
-    last_tracerPixel += 1;
 
-    if (last_tracerPixel >= settings.settings.ls_pixels || last_tracerPixel < 0) {
-      last_tracerPixel = 0;
-    }
+  bool updateRequired = false;
 
-    int m = settings.settings.ls_tracerPixels;
-    for (int n = last_tracerPixel; n < settings.settings.ls_pixels && m-- > 0; n++)
-    {
-      if (!(targetLeds[n].r == 0 && targetLeds[n].b == 0 && targetLeds[n].g == 0))
-      {
-        leds[n].r = settings.settings.ls_tracerColour[0];
-        leds[n].g = settings.settings.ls_tracerColour[1];
-        leds[n].b = settings.settings.ls_tracerColour[2];
+  for (auto lightSegment : lightSegments) {
+
+    if (lightSegment->isActive()) {
+
+      if (lightSegment->update()) {
+
+        // Copy the current Pixel value from the light segment to the light strip
+        CRGB pixel;
+        int pixels = lightSegment->getNumPixels();
+        int startPixel = lightSegment->getStartPixel();
+        for (int m = 0; m < pixels; m += lightSegment->getDensity()) {
+          pixel = lightSegment->getPixel(m);
+          stripLeds.setPixelColor(startPixel + m, stripLeds.Color(pixel.r, pixel.g, pixel.b));
+        }
+
+        if (pixels > 0) {
+          updateRequired = true;
+        }
+
       }
     }
   }
 
-
-  if (showLeds)  {
-    for (int n = 0; n < settings.settings.ls_pixels; n++) {
-      stripLeds.setPixelColor(n, stripLeds.Color(leds[n].r, leds[n].g, leds[n].b));
-    }
+  if (updateRequired) {
     stripLeds.show();
-    //FastLED.show();
   }
 
-  transitionTimer = millis() + TRANSITION_DELAY;
+  /*
+     // Need to add the tracer logic back again.
+     // But the new logic will need to read the pixel from the strip
+
+     // Set the non-specific light tracer
+     if (settings.settings.ls_tracerPixels > 0) {
+
+       last_tracerPixel += 1;
+
+       if (last_tracerPixel >= settings.settings.ls_pixels || last_tracerPixel < 0) {
+         last_tracerPixel = 0;
+       }
+
+       int m = settings.settings.ls_tracerPixels;
+       for (int n = last_tracerPixel; n < settings.settings.ls_pixels && m-- > 0; n++)
+       {
+         if (!(targetLeds[n].r == 0 && targetLeds[n].b == 0 && targetLeds[n].g == 0))
+         {
+           leds[n].r = settings.settings.ls_tracerColour[0];
+           leds[n].g = settings.settings.ls_tracerColour[1];
+           leds[n].b = settings.settings.ls_tracerColour[2];
+         }
+       }
+     }
+
+  */
+
+  // Clean out any expired / retired light segment objects
+  for (auto lightSegment = lightSegments.begin(); lightSegment != lightSegments.end(); ++lightSegment) {
+    // Clean up
+    if ((*lightSegment)->getState() == RETIRED) {
+      lightSegments.erase(lightSegment);
+    }
+  }
+
+
+
+
 
 }
 
@@ -309,15 +373,12 @@ void processBackgroundFlags() {
       delay(1000);
 
       // reboot on next loop
-      reboot_counter = 1; 
+      reboot_counter = 1;
     }
 
     erase_flash_counter -= 1;
     delay(50);
   }
-
-  // Update the relays
-  updateRelayState();
 
 }
 
@@ -328,222 +389,155 @@ void processBackgroundFlags() {
 //
 // Get the current light state
 bool getLightState(int index) {
-  return currentState[index];
+
+  for (auto &lightSegment : lightSegments) {
+    if (lightSegment->isActive() && lightSegment->getIndex() == index) {
+      return lightSegment->getLightState();
+    }
+  }
+
+  return false;
+
 }
 
+std::shared_ptr<LightSegment> getLightSegment(int index) {
+
+  for (auto &lightSegment : lightSegments) {
+    if (lightSegment->isActive() && lightSegment->getIndex() == index) {
+      return lightSegment;
+
+    }
+  }
+
+  // Create a NULL LightSegment to return nothing.
+  std::shared_ptr<LightSegment> nullLs(new BlackWhiteLightSegment());
+  return nullLs;
+}
+
+void setLightState(int index, bool isOn) {
+
+  for (auto lightSegment : lightSegments) {
+    if (lightSegment->isActive() && lightSegment->getIndex() == index) {
+      lightSegment->setLightState(isOn);
+      if (debug_serial_output) Serial.printf("\nLightSegment %d : %s", index, isOn ? "ON" : "OFF");
+      return;
+    }
+  }
+
+}
 
 //
 // Publish Light State
 void publishLightState(int index)
 {
+  if (!settings.settings.mqtt_enabled) {
+    return;
+  }
+
+  std::shared_ptr<LightSegment> lightSegment = getLightSegment(index);
+  int mqttTopicId = lightSegment->getMqttId();
+  bool currentLightState = lightSegment->getLightState();
+
   // If enabled
-  if (settings.settings.ls_topicIndex[index] > 0) {
+  if (mqttTopicId > 0) {
 
     // Publish MQTT
-    if (settings.settings.mqtt_enabled) {
-      char topic[120];
-      String suffix = String(MQTT_SUFFIX);
-      suffix += String(settings.settings.ls_topicIndex[index]);
-      settings.composeMqttTopic(topic, sizeof(topic), 1, mqtt_topic, suffix.c_str());
 
-      uint16_t packetId = mqttClient.publish(topic, 1, true, currentState[index] ? settings.settings.mqtt_state_text[1] : settings.settings.mqtt_state_text[0]);
+    char topic[120];
+    String suffix = String(MQTT_SUFFIX);
+    suffix += String(mqttTopicId);
+    settings.composeMqttTopic(topic, sizeof(topic), 1, mqtt_topic, suffix.c_str());
 
-      Serial.printf("\nMQTT Publish : Topic=%s , State=%s packetId=%d", topic, currentState[index] ? settings.settings.mqtt_state_text[1] : settings.settings.mqtt_state_text[0], packetId);
-    }
+    uint16_t packetId = mqttClient.publish(topic, 1, true, currentLightState ? settings.settings.mqtt_state_text[1] : settings.settings.mqtt_state_text[0]);
 
+    if (debug_serial_output) Serial.printf("\nMQTT Publish : Topic=%s , State=%s packetId=%d", topic, currentLightState ? settings.settings.mqtt_state_text[1] : settings.settings.mqtt_state_text[0], packetId);
   }
 }
 
 void publishLightStates()
 {
-  // Publish every minute, regardless of a change.
-  long now = millis();
-  if ((now - lastStatusSent > STATUS_RESEND_PERIOD) || (now - lastStatusSent < 0) ) {
-  
-    lastStatusSent = now;
-    
-    for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
-      publishLightState(n);
-    }
-    
-    if (settings.settings.mqtt_enabled) {
-      Serial.printf("\nMQTT Publish : All topics resent");
-    }
-  
+  for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
+    publishLightState(n);
+  }
+
+  if (settings.settings.mqtt_enabled) {
+    if (debug_serial_output) Serial.printf("\nMQTT Publish : All topics resent");
+  }
+}
+
+int blinks = 0;
+void blinkLedEvent()
+{
+  if (blinks < 0) return;
+  int currentState = LOW;
+  if (settings.settings.status_light_gpio >= 0) digitalRead(settings.settings.status_light_gpio);
+  if (currentState == LOW)
+  {
+    if (debug_serial_output) Serial.printf("\nBlink LED : Off");
+    blinks--;
+    if (settings.settings.status_light_gpio >= 0) digitalWrite(settings.settings.status_light_gpio, HIGH);
+  }
+  else
+  {
+    if (debug_serial_output) Serial.printf("\nBlink LED : On  Count = %d", blinks + 1);
+    if (settings.settings.status_light_gpio >= 0) digitalWrite(settings.settings.status_light_gpio, LOW);
   }
 }
 
 //
 // Blink the led the number multiple times.
 //
-void blinkLed(int blinks, int period)
+void blinkLed(int blinkCount, int period)
 {
-  while (blinks-- > 0)
-  {
-    if (settings.settings.status_light_gpio >= 0) {
-      digitalWrite(settings.settings.status_light_gpio, LOW);
-    }
-    delay(300);
-    
-    if (settings.settings.status_light_gpio >= 0)  { 
-      digitalWrite(settings.settings.status_light_gpio, HIGH);
-    }
-    delay(period);
-  }
+  blinks = blinkCount;
 }
 
 
-/**
-   Relay Logic control
-*/
-// 
-// If off to on, power on relay and wait for period, then turn on all the lights
-// If on to off, turn off the lights and wait the period, then turn off the relay
-// If on to on, do nothing
-// If off to off, do nothing
-// If relay disabled - do nothing - as turn on has done all the work
-void updateRelayState()
-{
-  if (relay_state_current == relay_state_next) {
-    return;  // nothing to do
-  }
-  
-  // If no relay then do nothing
-  if (settings.settings.relay_gpio < 0) {
-    return;
-  }
-  
-  uint32_t now = millis();
-  
-  if (relay_state_next == RELAY_ON) {
-    if (relay_change_after == 0) {
-      // Turn on the relay and wait before re-activating the lights
-      digitalWrite(settings.settings.relay_gpio, HIGH);
-      Serial.printf("\nRelay : ON, wait %d ms", settings.settings.relay_start_delay);
 
-      relay_change_after = now + settings.settings.relay_start_delay;
-      if (relay_change_after < now) {
-        // It's overflowed - help
-        relay_change_after = now; // Just schedule it for the next round
-      }
-    } else if (relay_change_after < now) {
-      // Delay expired
-      relay_change_after = 0; // Disable logic - it's all complete
-      relay_state_current = RELAY_ON;
-      Serial.printf("\nRelay : Turn on the lights after the delay");
-      // ready to turn on the lights for real
-      for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
-        if (currentState[n]) {
-          turnLightOn(n);
-        }
-        else { 
-          turnLightOff(n);
-        }
-      }
+
+void setRelayStateIfNoLightSegmentsOn(bool relayState) {
+
+  bool anyLightsOn = false;
+  for (auto lightSegment : lightSegments) {
+    if (lightSegment->isActive() && lightSegment->getLightState()) {
+      anyLightsOn = true;
     }
-  } else if (relay_state_next == RELAY_OFF) {
-    if (relay_change_after == 0) {
-      
-      // ready to turn off the lights for real
-      Serial.printf("\nRelay : Turn off the lights, wait %d ms", settings.settings.relay_stop_delay);
-      for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
-        if (currentState[n]) {
-          turnLightOn(n);
-        }
-        else { 
-          turnLightOff(n);
-        }
-      }
-
-      relay_change_after = now + settings.settings.relay_stop_delay;
-      if (relay_change_after < now) {
-        // It's overflowed - help
-        relay_change_after = now; // Just schedule it for the next round
-      }
-
-    } else if (relay_change_after < now) {
-      // Delay expired
-      relay_change_after = 0; // Disable logic - it's all complete
-      relay_state_current = RELAY_OFF;
-      // Turn on the relay
-      digitalWrite(settings.settings.relay_gpio, LOW);
-      Serial.printf("\nRelay : OFF, after the delay");
+  }
+  if (!anyLightsOn) {
+    if (relayState) {
+      relayControl.turnOn();
+    } else {
+      relayControl.turnOff();
     }
-    
   }
 }
-
-void setRelayOn() {
-
-  // If any of the lights need to be on or off, then just set the current state
-  if (settings.settings.relay_gpio < 0) {
-    relay_state_current = RELAY_ON;
-    relay_state_next = RELAY_ON;
-    return;
-  }
-
-  bool isOn = false;
-  
-  for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
-      if (currentState[n]) { 
-        isOn = true; 
-      }
-  }
-
-  int target_relay_state_next = isOn ? RELAY_ON : RELAY_OFF;
-
-  if (target_relay_state_next != relay_state_next) {
-    if (target_relay_state_next == relay_state_current && relay_state_current == RELAY_ON) {
-      relay_change_after = 0;
-    }
-    relay_state_next = target_relay_state_next;
-  }
-}
-
-
 /**
    Virtual Light Segment control
 */
 void turnLightOn(int n)
 {
-  currentState[n] = true;
+  // If all the lights off, turn on the relay
+  setRelayStateIfNoLightSegmentsOn(true);
+
+  std::shared_ptr<LightSegment> ls = getLightSegment(n);
+  if (!ls->isActive()) return;
+
+  setLightState(n, true);
+
   publishLightState(n);
-
-  setRelayOn();
-
-  // If relay not on, then just return as it will happen after a short delay
-  if (relay_state_current == RELAY_OFF) {
-    return;
-  }
-
-  if (settings.settings.ls_density[n] <= 0) settings.settings.ls_density[n] = 1;
-  
-  for (int m = settings.settings.ls_startPixel[n]; m <= settings.settings.ls_endPixel[n]; m += settings.settings.ls_density[n]) {
-    CRGB cOn;  cOn.r = settings.settings.ls_colourOn[n][0]; cOn.g = settings.settings.ls_colourOn[n][1]; cOn.b = settings.settings.ls_colourOn[n][2];
-    CRGB cOff; cOff.r = settings.settings.ls_colourOff[n][0]; cOff.g = settings.settings.ls_colourOff[n][1]; cOff.b = settings.settings.ls_colourOff[n][2];
-    targetLeds[m] = cOn;
-  }
 }
 
 void turnLightOff(int n)
 {
-  currentState[n] = false;
+  std::shared_ptr<LightSegment> ls = getLightSegment(n);
+  if (!ls->isActive()) return;
+
+  setLightState(n, false);
+
   publishLightState(n);
 
-  setRelayOn();
-
-  // If relay not on, then just return as it will happen after a short delay
-  if (relay_state_current == RELAY_OFF) {
-    return;
-  }
-
-  if (settings.settings.ls_density[n] <= 0) settings.settings.ls_density[n] = 1;
-  
-  for (int m = settings.settings.ls_startPixel[n]; m <= settings.settings.ls_endPixel[n]; m += settings.settings.ls_density[n]) {
-    CRGB cOff; cOff.r = settings.settings.ls_colourOff[n][0]; cOff.g = settings.settings.ls_colourOff[n][1]; cOff.b = settings.settings.ls_colourOff[n][2];
-    targetLeds[m] = cOff;
-  }
-
+  // If all the lights off, turn off the relay
+  setRelayStateIfNoLightSegmentsOn(false);
 }
 
 
@@ -554,7 +548,7 @@ void turnLightOff(int n)
 // MQTT callback function -(Use only if topics are being subscribed to)
 void mqttCallback(char* topic, char* payload, size_t length, size_t index, size_t total) {
 
-  Serial.printf("\nMQTT Command : Topic = %s, Payload length = %d", topic, length);
+  if (debug_serial_output) Serial.printf("\nMQTT Command : Topic = %s, Payload length = %d", topic, length);
 
   if (length == 0) {
     return;
@@ -571,30 +565,33 @@ void mqttCallback(char* topic, char* payload, size_t length, size_t index, size_
   int updatedLeds = 0;
 
   // Handle TOPIC_LIGHT_POWER_PREFIX
-  for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++)
-  {
-    char targetTopic[120];
-    String suffix = String(MQTT_SUFFIX);
-    suffix += String(settings.settings.ls_topicIndex[n]);
-    settings.composeMqttTopic(targetTopic, sizeof(targetTopic), 0, mqtt_topic, suffix.c_str());
+  for (auto lightSegment : lightSegments) {
 
-    if (strTopic == targetTopic) {
+    if (lightSegment->isActive()) {
 
-      updatedLeds += 1;
+      char targetTopic[120];
+      String suffix = String(MQTT_SUFFIX);
+      suffix += String(lightSegment->getMqttId());
+      settings.composeMqttTopic(targetTopic, sizeof(targetTopic), 0, mqtt_topic, suffix.c_str());
 
-      String strValue = String((char*)data);
+      if (strTopic == targetTopic) {
 
-      Serial.printf("\nMQTT Command : Topic = %s, Value = %s", strTopic.c_str(), strValue.c_str());
+        updatedLeds += 1;
 
-      if (strValue == settings.settings.mqtt_state_text[1]) {
-        turnLightOn(n);
+        String strValue = String((char*)data);
+
+        if (debug_serial_output) Serial.printf("\nMQTT Command : Topic = %s, Value = %s", strTopic.c_str(), strValue.c_str());
+
+        if (strValue == settings.settings.mqtt_state_text[1]) {
+          turnLightOn(lightSegment->getIndex());
+        }
+
+        if (strValue == settings.settings.mqtt_state_text[0]) {
+          turnLightOff(lightSegment->getIndex());
+        }
+
+        publishLightState(lightSegment->getIndex());
       }
-
-      if (strValue == settings.settings.mqtt_state_text[0]) {
-        turnLightOff(n);
-      }
-
-      publishLightState(n);
     }
   }
 
@@ -606,18 +603,21 @@ void resubscribeTopics() {
     return;
   }
 
-  for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++)  {
+  for (auto lightSegment : lightSegments) {
 
-    if (settings.settings.ls_topicIndex[n] > 0) {
+    if (lightSegment->isActive()) {
 
-      char targetTopic[120];
-      String suffix = String(MQTT_SUFFIX);
-      suffix += String(settings.settings.ls_topicIndex[n]);
-      settings.composeMqttTopic(targetTopic, sizeof(targetTopic), 0, mqtt_topic, suffix.c_str());
+      if (lightSegment->getMqttId() > 0) {
 
-      uint16_t packetIdSub = mqttClient.subscribe(targetTopic, 2);
-      Serial.printf("\nMQTT Subscribe : Topic = %s packetId = %d", targetTopic, packetIdSub);
+        char targetTopic[120];
+        String suffix = String(MQTT_SUFFIX);
+        suffix += String(lightSegment->getMqttId());
+        settings.composeMqttTopic(targetTopic, sizeof(targetTopic), 0, mqtt_topic, suffix.c_str());
 
+        uint16_t packetIdSub = mqttClient.subscribe(targetTopic, 2);
+        if (debug_serial_output) Serial.printf("\nMQTT Subscribe : Topic = %s packetId = %d", targetTopic, packetIdSub);
+
+      }
     }
   }
 }
@@ -630,7 +630,7 @@ void resubscribeTopics() {
 void connectToMqtt() {
 
   if (settings.settings.mqtt_enabled) {
-    Serial.printf("\nMQTT Connect : Attempting\n");
+    if (debug_serial_output) Serial.printf("\nMQTT Connect : Attempting\n");
     mqttClient.connect();
   }
 
@@ -642,13 +642,13 @@ void reconnectWifi() {
     return;
   }
 
-  Serial.printf("\nWifi : Not connected - trying autoConnect with hostname %s\n", host_name);
+  if (debug_serial_output) Serial.printf("\nWifi : Not connected - trying autoConnect with hostname %s\n", host_name);
   wifiManager.autoConnect(host_name);
 
   // Connect to MQTT
   if ( WiFi.status() != WL_CONNECTED ) {
 
-    Serial.printf("\nWifi : Failed to connect Wifi, try again in 5 seconds");
+    if (debug_serial_output) Serial.printf("\nWifi : Failed to connect Wifi, try again in 5 seconds");
 
   }
 
@@ -674,49 +674,49 @@ void scheduleEraseAllSettings() {
    MQTT Client Events
 */
 
-void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
-  
+void onWifiDisconnect(const WiFiEventStationModeDisconnected & event) {
+
   if (settings.settings.mqtt_enabled) {
-    Serial.printf("\nMQTT Disconnected : Lost connection");
+    if (debug_serial_output) Serial.printf("\nMQTT Disconnected : Lost connection");
     mqttReconnectTimer.detach(); // remove the automatic reconnect
   }
 
   // wifiReconnectTimer.once(2, reconnectWifi);
 }
 
-void onWifiConnect(const WiFiEventStationModeGotIP& event) {
-    if (settings.settings.mqtt_enabled) {
-      Serial.printf("\nMQTT Connect : Network detected");
-      connectToMqtt();
-    }
+void onWifiConnect(const WiFiEventStationModeGotIP & event) {
+  if (settings.settings.mqtt_enabled) {
+    if (debug_serial_output) Serial.printf("\nMQTT Connect : Network detected");
+    connectToMqtt();
+  }
 }
 
 
 void onMqttConnect(bool sessionPresent) {
-  Serial.printf("\nMQTT Connect : Acknowledged. SessionPresent: %s", sessionPresent ? "yes" : "no");
+  if (debug_serial_output) Serial.printf("\nMQTT Connect : Acknowledged. SessionPresent: %s", sessionPresent ? "yes" : "no");
   resubscribeTopics();
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
   if (WiFi.isConnected()) {
-    Serial.printf("\nMQTT Disconnect : reason: %d.  Attempting reconnect as network has not failed.", reason);
+    if (debug_serial_output) Serial.printf("\nMQTT Disconnect : reason: %d.  Attempting reconnect as network has not failed.", reason);
     mqttReconnectTimer.once(2, connectToMqtt);
   }
   else {
-    Serial.printf("\nMQTT Disconnect : reason: %d", reason);
+    if (debug_serial_output) Serial.printf("\nMQTT Disconnect : reason: %d", reason);
   }
 }
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-  Serial.printf("\nMQTT Subscribe : Acknowledged packetId: %d, qos: %d", packetId, qos);
+  if (debug_serial_output) Serial.printf("\nMQTT Subscribe : Acknowledged packetId: %d, qos: %d", packetId, qos);
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
-  Serial.printf("\nMQTT Unsubscribe : Acknowledged packetId: %d", packetId);
+  if (debug_serial_output) Serial.printf("\nMQTT Unsubscribe : Acknowledged packetId: %d", packetId);
 }
 
 void onMqttPublish(uint16_t packetId) {
-  Serial.printf("\nMQTT Publish : Acknowledged packetId: %d", packetId);
+  if (debug_serial_output) Serial.printf("\nMQTT Publish : Acknowledged packetId: %d", packetId);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
