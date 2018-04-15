@@ -4,7 +4,7 @@ Configure an ESP8266 module to control up to 8 virtual light segments in a singl
 ## Features
 
 - Allows for the definition of up to 8 virtual lights.
-- Each virtual light has a soft on/off behaviour.
+- Each virtual light has a choice of transitions between on/off.
 - Provides MQTT Control of each light.
 - Uses a built-in webserver to allow configuration and control of an individual virtual light
 - Compiles on standard Arduino compiler.
@@ -119,7 +119,7 @@ Technically any ESP8266 board that will run Sonoff-Tasmota will run this firmwar
   It can also be configured to be used with a Sonoff Basic (and POW/Dual/etc) where the spare GPIO 14 pin is used to control the LED Strip. 
 
   With the Sonoff, you can utilise  the relay to switch the LED  power supply on and off. This will save power when all the virtual lights are off. 
-  Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-Sonoff.png?raw=true).
+  Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-sonoff.png?raw=true).
 
 ## LED Strip
 
@@ -178,9 +178,12 @@ See [Sonoff-Tasmota Wiki](https://github.com/arendst/Sonoff-Tasmota/wiki/Theo's-
 - Version 2.0 - Async Version - Async WebServer, Async MQTT, NeoPixel. Async libraries solved most of the network limitations - and found to be more responsive. 
   NeoPixel introduced as it allowed for a configurable LED strip PIN. Added better icons for the virtual lights.
 
+- Version 3.0 - Light Transition - Async WebServer, Async MQTT, NeoPixel. Added transitions to each of the light segments.  Refactored the code to contain the logic for relay and light segments into their own objects.
+
 ### Issues
 
-- There appears to be a connection limit on the webserver that no matter how much async I do.  If your HTML page doesn't load correctly the first time, refresh your browser and it should display correctly.
+- Density logic has not been fully tested for each animation.
+- The tracer logic has not been re-implemented.
 
 ## License
 This program is licensed under Lesser GPL-3.0.

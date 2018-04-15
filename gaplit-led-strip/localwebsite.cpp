@@ -13,8 +13,8 @@
 
     You should have received a copy of the GNU Lesser General Public License
     along with "GapLit Led Strip".  If not, see <http://www.gnu.org/licenses/>.
- */
- 
+*/
+
 #include <core_version.h>
 
 #include <WiFiClient.h>
@@ -34,6 +34,7 @@ void scheduleEraseAllSettings();
 void turnLightOn(int n);
 void turnLightOff(int n);
 bool getLightState(int index);
+void reloadLightSegment(int index);
 
 
 LocalWebsite::LocalWebsite(bool serial_debug)
@@ -99,11 +100,11 @@ void LocalWebsite::setup(AsyncWebServer *server, Settings *settings, const char 
 */
 void LocalWebsite::handleResource(AsyncWebServerRequest *request)
 {
-  
+
 #ifndef ESTIMATES_MIN_HEAP_MEMORY
 #define ESTIMATES_MIN_HEAP_MEMORY 13000
 #endif
-  
+
   if (outOfHeapMemory(request, ESTIMATES_MIN_HEAP_MEMORY, true)) {
     request->send_P(404, CONTENT_TYPE_HTML_P, OUT_OF_MEMORY);
     return;
@@ -111,7 +112,7 @@ void LocalWebsite::handleResource(AsyncWebServerRequest *request)
 
   String fileName = request->arg("file");
 
-  Serial.printf("\nWebsite : filename: %s", fileName.c_str());
+  if (_serial_output) Serial.printf("\nWebsite : filename: %s", fileName.c_str());
 
   if (fileName != "") {
 
@@ -196,8 +197,8 @@ void LocalWebsite::handleWebUpdateUpload(AsyncWebServerRequest *request)
 void LocalWebsite::handleWebUpdateUploadFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
 
   if (!index) { // if index == 0 then this is the first frame of data
-    Serial.printf("\nWebUpdate: filename: %s", filename.c_str());
-    Serial.setDebugOutput(true);
+    if (_serial_output) Serial.printf("\nWebUpdate: filename: %s", filename.c_str());
+    if (_serial_output) Serial.setDebugOutput(true);
 
     // calculate sketch space required for the update
     uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
@@ -214,11 +215,11 @@ void LocalWebsite::handleWebUpdateUploadFile(AsyncWebServerRequest *request, Str
 
   if (final) { // if the final flag is set then this is the last frame of data
     if (Update.end(true)) { //true to set the size to the current progress
-      Serial.printf("\nWebUpdate: success: %u B\nRebooting...\n", index + len);
+      if (_serial_output) Serial.printf("\nWebUpdate: success: %u B\nRebooting...\n", index + len);
     } else {
       Update.printError(Serial);
     }
-    Serial.setDebugOutput(false);
+    if (_serial_output) Serial.setDebugOutput(false);
   }
 }
 
@@ -259,12 +260,12 @@ void LocalWebsite::handleEraseSettings(AsyncWebServerRequest *request)
 void LocalWebsite::handleStats(AsyncWebServerRequest *request)
 {
   /*
-  
-  One day it might be necessary to hide stats information.
-  
-  if (_username != NULL && _password != NULL && !request->authenticate(_username, _password)) {
+
+    One day it might be necessary to hide stats information.
+
+    if (_username != NULL && _password != NULL && !request->authenticate(_username, _password)) {
     return request->requestAuthentication();
-  }
+    }
   */
   uint32_t heapSize = ESP.getFreeHeap();
 
@@ -286,10 +287,10 @@ void LocalWebsite::handleStats(AsyncWebServerRequest *request)
   d += "\"flashChipRealSize\" : \""; d += String(ESP.getFlashChipRealSize()); d += "\",\n";
   d += "\"flashChipSpeed\" : \""; d += String(ESP.getFlashChipSpeed()); d += "\",\n";
   d += "\"cycleCount\" : \""; d += String(ESP.getCycleCount()); d += "\" \n";
-  
+
   d += "}\n";
 
-  request->send(200, CONTENT_TYPE_HTML, d.c_str());
+  request->send(200, CONTENT_TYPE_JSON, d.c_str());
 }
 
 void LocalWebsite::dumpPostArgs(AsyncWebServerRequest *request, const char *methodName)
@@ -297,11 +298,11 @@ void LocalWebsite::dumpPostArgs(AsyncWebServerRequest *request, const char *meth
   int args = request->args();
 
   for (int i = 0; i < args; i++) {
-    Serial.printf("\nWebsite: %s called - arg[%s]: %s", methodName, request->argName(i).c_str(), request->arg(i).c_str());
+    if (_serial_output) Serial.printf("\nWebsite: %s called - arg[%s]: %s", methodName, request->argName(i).c_str(), request->arg(i).c_str());
   }
 
   if (args == 0) {
-    Serial.printf("\nWebsite: %s called - no arguments", methodName);
+    if (_serial_output) Serial.printf("\nWebsite: %s called - no arguments", methodName);
   }
 }
 
@@ -309,7 +310,7 @@ void LocalWebsite::handleSettings(AsyncWebServerRequest *request)
 {
   String userName = String(_settings->settings.web_user);
   String pwd = String(_settings->settings.web_password);
-  
+
   if (userName.length() > 0 && pwd.length() > 0 && request->authenticate(userName.c_str(), pwd.c_str())) {
     return request->requestAuthentication();
   }
@@ -392,10 +393,11 @@ void LocalWebsite::appendSettingHtml(String &d, int index, const char *label, co
 // Create the JS String and append to string
 void LocalWebsite::appendLightSettingUpdateJS(String &d, int settingId, int index) {
   char v[255];
-  snprintf_P(v, sizeof(v), PSTR("updateLightBlock(%d, 'Light %d', '%s', %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d);"),
+  snprintf_P(v, sizeof(v), PSTR("updateLightBlock(%d, 'Light %d', '%s', %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d);"),
              settingId, index + 1, _settings->settings.ls_displayName[index], _settings->settings.ls_topicIndex[index],
              _settings->settings.ls_startPixel[index], _settings->settings.ls_endPixel[index],
              _settings->settings.ls_density[index],
+             _settings->settings.ls_transition[index],
              _settings->settings.ls_powerOnState[index],
              _settings->settings.ls_colourOn[index][0], _settings->settings.ls_colourOn[index][1], _settings->settings.ls_colourOn[index][2],
              _settings->settings.ls_colourOff[index][0], _settings->settings.ls_colourOff[index][1], _settings->settings.ls_colourOff[index][2]);
@@ -424,6 +426,7 @@ void LocalWebsite::appendSettingsHtml(String &d, int index) {
       APPENDSETTINGS_HTML_SWITCH_ITEM (9, "MQTT Group Topic", "mqtt_grptopic", _settings->settings.mqtt_grptopic)
       APPENDSETTINGS_HTML_SWITCH_ITEM (10, "MQTT Retry Seconds", "mqtt_retry", _settings->settings.mqtt_retry)
       APPENDSETTINGS_HTML_SWITCH_ITEM (11, "MQTT Enabled", "mqtt_enabled", _settings->settings.mqtt_enabled)
+      APPENDSETTINGS_HTML_SWITCH_ITEM (12, "Debug Level", "seriallog_level", _settings->settings.seriallog_level)
       APPENDSETTINGS_HTML_SWITCH_ITEM (24, "Web Username", "web_user", _settings->settings.web_user)
       APPENDSETTINGS_HTML_SWITCH_ITEM_PASSWORD (25, "Web Password", "web_pwd", _settings->settings.web_password)
       APPENDSETTINGS_HTML_SWITCH_ITEM (26, "Led Strip PIN", "ls_gpio", _settings->settings.ls_gpio)
@@ -484,7 +487,7 @@ int LocalWebsite::getHttpIntParam(AsyncWebServerRequest *request, const char *pa
 
 void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
 
-  Serial.printf("\nWebsite: handleSettingsSave start - current heap : %u", ESP.getFreeHeap() );
+  if (_serial_output) Serial.printf("\nWebsite: handleSettingsSave start - current heap : %u", ESP.getFreeHeap() );
 
   int n = request->arg("index").toInt();
   String d = "";
@@ -500,6 +503,7 @@ void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
     _settings->settings.ls_startPixel[m] = request->arg( "startPixel" ).toInt();
     _settings->settings.ls_endPixel[m] = request->arg( "endPixel" ).toInt();
     _settings->settings.ls_density[m] = request->arg( "density" ).toInt();
+    _settings->settings.ls_transition[m] = request->arg("transition" ).toInt();
     _settings->settings.ls_powerOnState[m] = request->arg( "powerOnState" ).toInt();
     _settings->settings.ls_colourOn[m][0] = request->arg( "conR" ).toInt();
     _settings->settings.ls_colourOn[m][1] = request->arg( "conG" ).toInt();
@@ -515,6 +519,8 @@ void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
     if (_settings->settings.ls_density[m] <= 0) _settings->settings.ls_density[m] = 1;
     if (_settings->settings.ls_powerOnState[m] < 0) _settings->settings.ls_powerOnState[m] = 0;
     if (_settings->settings.ls_powerOnState[m] > 1) _settings->settings.ls_powerOnState[m] = 1;
+
+    reloadLightSegment(m);
 
     processed = true;
   }
@@ -560,6 +566,8 @@ void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
         break;
       case 11:
         _settings->settings.mqtt_enabled = getHttpIntParam(request, "value", 0, 1, _settings->settings.mqtt_enabled);
+      case 12:
+        _settings->settings.seriallog_level = getHttpIntParam(request, "value", 0, 1, _settings->settings.seriallog_level);
         break;
       case 24:
         strlcpy(_settings->settings.web_user, request->arg("value").c_str(), sizeof(_settings->settings.web_user));
@@ -578,7 +586,7 @@ void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
         _settings->settings.ls_pixels = getHttpIntParam(request, "value", 0, 500, _settings->settings.ls_pixels);
         if (_settings->settings.ls_pixels < 0) _settings->settings.ls_pixels = 0;
         break;
-        
+
 
       case 30:
         _settings->settings.ls_tracerPixels = getHttpIntParam(request, "value", 0, 255, _settings->settings.ls_tracerPixels);
@@ -622,7 +630,7 @@ void LocalWebsite::handleSettingsSave(AsyncWebServerRequest *request) {
 
   appendSettingsHtml(d, n);
 
-  Serial.printf("\nWebsite: handleSettingsSave end  - current heap : %u", ESP.getFreeHeap() );
+  if (_serial_output) Serial.printf("\nWebsite: handleSettingsSave end  - current heap : %u", ESP.getFreeHeap() );
 
   request->send(200, CONTENT_TYPE_HTML, d.c_str());
 
@@ -635,7 +643,7 @@ void LocalWebsite::handleShowMqttRefresh(AsyncWebServerRequest *request)
   char smallValue[33];
   char mqtt_topic[33];
 
-  Serial.printf("\nWebsite: handleShowMqttRefresh called - current heap : %u", ESP.getFreeHeap() );
+  if (_serial_output) Serial.printf("\nWebsite: handleShowMqttRefresh called - current heap : %u", ESP.getFreeHeap() );
 
   _settings->getHostname(smallValue, sizeof(smallValue));
   d += "showSNV('Global', 'Eval Hostname', '" +  String(smallValue) + "');";
@@ -667,7 +675,7 @@ void LocalWebsite::handleShowMqttRefresh(AsyncWebServerRequest *request)
     d += "showSNV('Topic IDs', 'Light " + String(n + 1) + "', '" +  (_settings->settings.ls_topicIndex[n] > 0 ? String(_settings->settings.ls_topicIndex[n]) : String("disabled")) + "');";
   }
 
-  Serial.printf("\nWebsite: handleShowMqttRefresh end  - current heap : %u", ESP.getFreeHeap() );
+  if (_serial_output) Serial.printf("\nWebsite: handleShowMqttRefresh end  - current heap : %u", ESP.getFreeHeap() );
 
   request->send(200, CONTENT_TYPE_HTML, d.c_str());
 }
@@ -709,7 +717,8 @@ void LocalWebsite::handleToggleLS(AsyncWebServerRequest *request) {
     return;
   }
 
-  Serial.printf("\nToggleLS : lightIndex=%d", lightIndex);
+  if (_serial_output) Serial.printf("\nToggleLS : lightIndex=%d", lightIndex);
+  if (_serial_output) Serial.printf("\nToggleLS : lightIndex=%d currentState=%s", lightIndex, getLightState(lightIndex) ? "on" : "off");
 
   if (!getLightState(lightIndex)) {
     turnLightOn(lightIndex);
@@ -783,7 +792,7 @@ bool LocalWebsite::outOfHeapMemory(AsyncWebServerRequest *request, long reserved
     return false;
   }
 
-  Serial.printf("\nWebsite : insufficient heap memory - current heap : %u", ESP.getFreeHeap() );
+  if (_serial_output) Serial.printf("\nWebsite : insufficient heap memory - current heap : %u", ESP.getFreeHeap() );
 
   return true;
 }

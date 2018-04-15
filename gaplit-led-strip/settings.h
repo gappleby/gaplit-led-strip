@@ -13,7 +13,7 @@
 
     You should have received a copy of the GNU Lesser General Public License
     along with "GapLit Led Strip".  If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 #ifndef _SETTINGS_H_
 #define _SETTINGS_H_
 
@@ -38,7 +38,7 @@
 #endif
 
 
-#define VERSION                 0x02000001
+#define VERSION                 0x03000001
 #define LIGHT_SEGMENTS_MAX      8
 #define MAX_PIXELS_DEFAULT      100
 #define DISPLAY_NAME_MAX_LEN    33
@@ -57,7 +57,7 @@
 #define APP_TIMEZONE           10           // Hours from GMT
 #define INPUT_BUFFER_SIZE      255          // Max number of characters in (serial) command buffer
 #define OTA_URL                ""
-#define SERIAL_LOG_LEVEL       1
+#define SERIAL_LOG_LEVEL       0
 
 #define D_LOG_APPLICATION "APP: "  // Application
 #define D_LOG_CONFIG "CFG: "       // Settings
@@ -74,7 +74,7 @@
 #define D_COUNT "Count"
 #define D_BYTES "Bytes"
 
-#define CFG_HOLDER             0x20180301        // [Reset 1] Change this value to load following default configuration parameters
+#define CFG_HOLDER             0x20180401        // [Reset 1] Change this value to load following default configuration parameters
 #define SAVE_DATA              1                 // [SaveData] Save changed parameters to Flash (0 = disable, 1 - 3600 seconds)
 #define SAVE_STATE             1                 // [SetOption0] Save changed power state to Flash (0 = disable, 1 = enable)
 
@@ -171,6 +171,7 @@ struct PersistentSettings {
   uint16_t      ls_density[LIGHT_SEGMENTS_MAX];
   uint8_t       ls_colourOn[LIGHT_SEGMENTS_MAX][3];
   uint8_t       ls_colourOff[LIGHT_SEGMENTS_MAX][3];
+  uint8_t       ls_transition[LIGHT_SEGMENTS_MAX];      // 0 = On/Off, 1 = CrossFade, 2 = WipeLeft, 3=WipeRight, 4 = WipeCenter, 5 = Random
 
 };
 
@@ -193,6 +194,10 @@ class Settings
     void composeMqttTopic(char *stopic, int lenTopic, byte prefix, char *topic, const char* subtopic);
     char* getHostname(char *output, int size);
     void dumpSettings();
+
+    byte getSerialLogLevel();
+    Settings *setSerialLogLevel(byte logLevel);
+    
 
   protected:
     void dumpSettings(char* parms);
