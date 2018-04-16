@@ -110,6 +110,7 @@ void setup() {
   settings.load();
   settings.loadDelta();
 
+  // Set the general debug level.  Specific level can be used if required.
   debug_serial_output = settings.getSerialLogLevel() > 0;
 
   // Don't bother to dump the settings normally.
@@ -119,6 +120,8 @@ void setup() {
     settings.dumpSettings();
   }
 
+  // Setup Status LED
+  if (settings.settings.status_light_gpio >= 0) pinMode(settings.settings.status_light_gpio, OUTPUT);
   blinkTimer.attach(0.5, blinkLedEvent);
   blinkLed(5, 100);
 
@@ -128,7 +131,6 @@ void setup() {
   settings.getHostname(host_name, sizeof(host_name));
 
   // Setup LightStrip
-  if (settings.settings.status_light_gpio >= 0) pinMode(settings.settings.status_light_gpio, OUTPUT);
   // stripLeds = Adafruit_NeoPixel(settings.settings.ls_pixels, settings.settings.ls_gpio, NEO_GRB + NEO_KHZ800);
   stripLeds.updateType(NEO_GRB + NEO_KHZ800);
   stripLeds.updateLength(settings.settings.ls_pixels);
@@ -221,7 +223,7 @@ void reloadLightSegment(int n) {
     ->setIndex(n)
     ->setStartEndPixel(settings.settings.ls_startPixel[n], settings.settings.ls_endPixel[n])
     ->setMqttId(settings.settings.ls_topicIndex[n])
-    ->setDensity(settings.settings.ls_density[n])
+    ->setDensity(settings.settings.ls_topicIndex[n])
     ->setSerialDebug(false);
 
     lightSegment->setLightState(false);
@@ -470,7 +472,7 @@ void blinkLedEvent()
 {
   if (blinks < 0) return;
   int currentState = LOW;
-  if (settings.settings.status_light_gpio >= 0) digitalRead(settings.settings.status_light_gpio);
+  if (settings.settings.status_light_gpio >= 0) currentState = digitalRead(settings.settings.status_light_gpio);
   if (currentState == LOW)
   {
     if (debug_serial_output) Serial.printf("\nBlink LED : Off");

@@ -23,6 +23,8 @@
 #ifndef __LocalWebsite_lang_H_
 #define __LocalWebsite_lang_H_
 
+#define INLINE_HTML_RESOURCE
+
 #define HTML_HEAD_BEGIN \
   "<head>"
 #define HTML_HEAD_END \
@@ -44,49 +46,50 @@
   ".ls{vertical-align:top;display:inline-block;text-align:center;width:120px;}\n"\
   ".lsimgON{width:100px;height:100px;} .lstxtON{display:inline-block;}\n"\
   ".lsimgOFF{width:100px;height:100px;} .lstxtOFF{display:inline-block;}\n"\
-  ".inputfile { width: 0.1px; height: 0.1px; opacity: 0; overflow: hidden; position: absolute; z-index: -1; }\n"\
-  ".inputfile + label { line-height:2.4rem;font-size:1.2rem;width:100%;-webkit-transition-duration:0.4s;transition-duration:0.4s;color: white; background-color: black; display: inline-block; cursor: pointer; }\n"\
-  ".inputfile:focus + label, .inputfile + label:hover { color: black; background-color:#ececec;}\n"\
-  ".inputfile:focus + label { outline: 1px dotted #000; outline: -webkit-focus-ring-color auto -5px;}\n"\
-  ".inputfile + label * { pointer-events: none; }"\
-  "input[type=radio] { display: inline; }"\
+  ".inputfile {width: 0.1px; height: 0.1px; opacity: 0; overflow: hidden; position: absolute; z-index: -1;}\n"\
+  ".inputfile + label {line-height:2.4rem;font-size:1.2rem;width:100%;-webkit-transition-duration:0.4s;transition-duration:0.4s;color: white; background-color: black; display: inline-block; cursor: pointer;}\n"\
+  ".inputfile:focus + label, .inputfile + label:hover {color: black; background-color:#ececec;}\n"\
+  ".inputfile:focus + label {outline: 1px dotted #000; outline: -webkit-focus-ring-color auto -5px;}\n"\
+  ".inputfile + label * {pointer-events: none;}"\
+  "input[type=radio] {display: inline;}"\
   "#snv div{width:100%;box-sizing:border-box;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;}"\
   ".snvName{width:40%;text-align:right;display:inline-block;}"\
   ".snvValue{width:60%;text-align:left;display:inline-block;box-sizing:border-box;}"\
   ".secTitle{text-align:left;font-size:1em;padding:5px}"\
   "#version{-webkit-transition-duration:0.4s;transition-duration:0.4s;}"\
   ""
+  
 #define HTML_COMMON1_JS \
-  "function toggleLS(index){ var xhr = new XMLHttpRequest();xhr.onload = function(){ try {eval(xhr.responseText);}catch(error) {console.log(error);}}; xhr.open ('post', '/toggle', true); var d = new FormData(); d.append('light', index);  xhr.send(d); return false;}\n" \
-  "function addLS(index) {var element = document.createElement('span');element.name='LS-'+index;element.id='LS-'+index;element.className='ls';element.onclick=function(){toggleLS(index);};var switches=document.getElementById('lt');switches.appendChild(element);}\n" \
-  "function updateLS(index, label, value) {var ls = document.getElementById('LS-'+index);if (ls===null) {addLS(index);ls = document.getElementById('LS-' + index);}; var lsv = document.getElementById('LS-state-' + index); if (lsv == null || value != lsv.value) if (value == 'On') { ls.innerHTML=\"<input type='hidden' id='LS-state-\" + index + \"' value='On'><img src='/res?file=light-on.svg' class='lsimgON' alt='light on'><span class='lstxtON'>\" + label + \"</span>\";} else { ls.innerHTML=\"<input type='hidden' id='LS-state-\" + index + \"' value='Off'><img src='/res?file=light-off.svg' class='lsimgOFF' alt='light off'><span class='lstxtOFF'>\" + label + \"</span>\";}}\n" \
-  "function reboot(){var xhr = new XMLHttpRequest(); xhr.onload = function(){ eval(xhr.responseText); }; xhr.open ('post', '/reboot', true); var d = new FormData(); d.append('reboot', 'true'); xhr.send(d); return false;}\n" \
-  "function updateVersion(s) { document.getElementById('version').innerHTML = s; }\n" \
-  "function getVersion() { var xhr = new XMLHttpRequest(); xhr.onload = function(){ try { updateVersion(xhr.responseText); }catch(error) {console.log(error);}}; xhr.open ('get', '/version', true); xhr.send(); return false;} setTimeout(getVersion, 300);\n" \
-  "function displayMsg(msg) { var element = document.getElementById('msg'); element.innerHTML=msg;}\n""try {  }catch(error) {console.log(error);}"
+  "function toggleLS(index){var xhr=new XMLHttpRequest();xhr.onload=function(){try {eval(xhr.responseText);}catch(error) {console.log(error);}}; xhr.open ('post', '/toggle', true); var d=new FormData(); d.append('light', index);  xhr.send(d); return false;}\n" \
+  "function addLS(index) {var element=document.createElement('span');element.name='LS-'+index;element.id='LS-'+index;element.className='ls';element.onclick=function(){toggleLS(index);};var switches=document.getElementById('lt');switches.appendChild(element);}\n" \
+  "function updateLS(index, label, value) {var ls=document.getElementById('LS-'+index);if (ls===null) {addLS(index);ls=document.getElementById('LS-' + index);}; var lsv=document.getElementById('LS-state-' + index); if (lsv == null || value != lsv.value) if (value == 'On') {ls.innerHTML=\"<input type='hidden' id='LS-state-\" + index + \"' value='On'><img src='/res?file=light-on.svg' class='lsimgON' alt='light on'><span class='lstxtON'>\" + label + \"</span>\";} else {ls.innerHTML=\"<input type='hidden' id='LS-state-\" + index + \"' value='Off'><img src='/res?file=light-off.svg' class='lsimgOFF' alt='light off'><span class='lstxtOFF'>\" + label + \"</span>\";}}\n" \
+  "function reboot(){var xhr=new XMLHttpRequest(); xhr.onload=function(){eval(xhr.responseText);}; xhr.open ('post', '/reboot', true); var d=new FormData(); d.append('reboot', 'true'); xhr.send(d); return false;}\n" \
+  "function updateVersion(s) {document.getElementById('version').innerHTML=s;}\n" \
+  "function getVersion() {var xhr=new XMLHttpRequest(); xhr.onload=function(){try {updateVersion(xhr.responseText);}catch(error) {console.log(error);}}; xhr.open ('get', '/version', true); xhr.send(); return false;} setTimeout(getVersion, 300);\n" \
+  "function displayMsg(msg) {var element=document.getElementById('msg'); element.innerHTML=msg;}\n""try {}catch(error) {console.log(error);}"
 
 #define HTML_SETTINGS_JS \
-  "function saveSetting(index) { var xhr = new XMLHttpRequest(); xhr.onload = function(){ eval(xhr.responseText); }; xhr.open ('post', '/settings', true); var settingName=document.getElementById('name-' + index); var settingValue=document.getElementById('setting-' + index); var d = new FormData(); d.append('save', 'true'); d.append('index', index);d.append('name', settingName.value); d.append('value', settingValue.value); xhr.send (d); return false;}\n" \
-  "function saveSettings() { for(var i = 0; i < arguments.length; i++) { setTimeout(saveSetting, i * 100 + 1, arguments[i]); } }\n" \
-  "function addSetting(index, label, name, value, type) { var element = document.createElement('div'); element.id = 'divSet-' + index;" \
-  " if (type=='password') { element.innerHTML = label + \": \" + \"<br><input type='password' name='setting-\" + index + \"' id='setting-\" + index + \"' value='\" + value + \"'><input type='hidden' name='name-\" + index + \"' id='name-\" + index + \"' value='\" + name + \"'><button name='btn-\" + index + \"' id='btn-\" + index + \"' onclick='saveSetting(\" + index + \");'>Apply</button>\";}\n" \
-  " else {element.innerHTML = label + \": \" + \"<br><input type='text' name='setting-\" + index + \"' id='setting-\" + index + \"' value='\" + value + \"'><input type='hidden' name='name-\" + index + \"' id='name-\" + index + \"' value='\" + name + \"'><button name='btn-\" + index + \"' id='btn-\" + index + \"' onclick='saveSetting(\" + index + \");'>Apply</button>\";}\n" \
+  "function saveSetting(index) {var xhr=new XMLHttpRequest(); xhr.onload=function(){eval(xhr.responseText);}; xhr.open ('post', '/settings', true); var settingName=document.getElementById('name-' + index); var settingValue=document.getElementById('setting-' + index); var d=new FormData(); d.append('save', 'true'); d.append('index', index);d.append('name', settingName.value); d.append('value', settingValue.value); xhr.send (d); return false;}\n" \
+  "function saveSettings() {for(var i=0; i < arguments.length; i++) {setTimeout(saveSetting, i * 100 + 1, arguments[i]);}}\n" \
+  "function addSetting(index, label, name, value, type) {var element=document.createElement('div'); element.id='divSet-' + index;" \
+  " if (type=='password') {element.innerHTML=label + \": \" + \"<br><input type='password' name='setting-\" + index + \"' id='setting-\" + index + \"' value='\" + value + \"'><input type='hidden' name='name-\" + index + \"' id='name-\" + index + \"' value='\" + name + \"'><button name='btn-\" + index + \"' id='btn-\" + index + \"' onclick='saveSetting(\" + index + \");'>Apply</button>\";}\n" \
+  " else {element.innerHTML=label + \": \" + \"<br><input type='text' name='setting-\" + index + \"' id='setting-\" + index + \"' value='\" + value + \"'><input type='hidden' name='name-\" + index + \"' id='name-\" + index + \"' value='\" + name + \"'><button name='btn-\" + index + \"' id='btn-\" + index + \"' onclick='saveSetting(\" + index + \");'>Apply</button>\";}\n" \
   " document.getElementById(\"settings\").appendChild(element);}\n" \
-  "function updateSetting(index, label, name, value, type) { var element = document.getElementById(\"setting-\" + index); if (element===null) { addSetting(index, label, name, value, type); element = document.getElementById(\"setting-\" + index); } element.value=value;}\n" \
-  "function updateLightBlock(index, label, displayName, topicIndex, startPixel, endPixel, density, transition, powerOnState, conR, conG, conB, coffR, coffG, coffB) { \n" \
-  "var element = document.getElementById('lightSet-' + index); " \
-  "if (element===null) { " \
-  "  element = document.createElement('div');" \
-  "  element.style = 'text-align:left;';" \
-  "  element.id = 'lightSet-' + index;" \
-  "  var fs = document.createElement('fieldset'); " \
-  "  var fsLabel = document.createElement('legend'); fsLabel.innerHTML =label; fsLabel.className = 'secTitle'; fs.appendChild(fsLabel); fs.appendChild(element);" \
-  "  var settings = document.getElementById('settings');\n" \ 
-  "  settings.appendChild(fs);\n" \
+  "function updateSetting(index, label, name, value, type) {var element=document.getElementById(\"setting-\" + index); if (element===null) {addSetting(index, label, name, value, type); element=document.getElementById(\"setting-\" + index);} element.value=value;}\n" \
+  "function updateLightBlock(index, label, displayName, topicIndex, startPixel, endPixel, density, transition, powerOnState, conR, conG, conB, coffR, coffG, coffB) {\n" \
+  "var element=document.getElementById('lightSet-' + index); " \
+  "if (element===null) {" \
+    "element=document.createElement('div');" \
+    "element.style='text-align:left;';" \
+    "element.id='lightSet-' + index;" \
+    "var fs=document.createElement('fieldset'); " \
+    "var fsLabel=document.createElement('legend'); fsLabel.innerHTML =label; fsLabel.className='secTitle'; fs.appendChild(fsLabel); fs.appendChild(element);" \
+    "var settings=document.getElementById('settings');\n" \ 
+    "settings.appendChild(fs);\n" \
   "}\n" \
-  "var s = \"\";" \
+  "var s=\"\";" \
   "s += \"Display Name: <input type='text' class='lsL' name='displayName-\" + index + \"' id='displayName-\" + index + \"' value='\" + displayName + \"'><br>\";" \
-  "s += \"MQTT Topic Id: <input type='text' class='lsS' name='topic-\" + index + \"' id='topic-\" + index + \"' value='\" + topicIndex + \"'> (0 = disabled)<br>\";" \
+  "s += \"MQTT Topic Id: <input type='text' class='lsS' name='topic-\" + index + \"' id='topic-\" + index + \"' value='\" + topicIndex + \"'> (0=disabled)<br>\";" \
   "s += \"Power On State : <input type='text' class='lsS' name='powerOnState-\" + index + \"' id='powerOnState-\" + index + \"' value='\" + powerOnState + \"'><br>\";" \
   "s += \"Start Pixel : <input type='text' class='lsS' name='startPixel-\" + index + \"' id='startPixel-\" + index + \"' value='\" + startPixel + \"'> End Pixel : <input type='text' class='lsS' name='endPixel-\" + index + \"' id='endPixel-\" + index + \"' value='\" + endPixel + \"'><br>\";" \
   "s += \"Density : <input type='text' class='lsS' name='density-\" + index + \"' id='density-\" + index + \"' value='\" + density + \"'> " \
@@ -96,10 +99,10 @@
   "s += \"On Color - R:<input type='text' class='lsS' name='conR-\" + index + \"' id='conR-\" + index + \"' value='\" + conR + \"'> G:<input type='text' class='lsS' name='conG-\" + index + \"' id='conG-\" + index + \"' value='\" + conG + \"'> B:<input type='text' class='lsS' name='conB-\" + index + \"' id='conB-\" + index + \"' value='\" + conB + \"'><br>\";" \
   "s += \"Off Color - R:<input type='text' class='lsS' name='coffR-\" + index + \"' id='coffR-\" + index + \"' value='\" + coffR + \"'> G:<input type='text' class='lsS' name='coffG-\" + index + \"' id='coffG-\" + index + \"' value='\" + coffG + \"'> B:<input type='text' class='lsS' name='coffB-\" + index + \"' id='coffB-\" + index + \"' value='\" + coffB + \"'><br>\";" \
   "s += \"<button name='btn-\" + index + \"' id='btn-\" + index + \"' onclick='saveLightBlock(\" + index + \");'>Apply</button>\";\n" \
-  "element.innerHTML = s;\n" \
-  "document.getElementById('transition-' + index ).options[ transition ].selected = true;}\n" \
-  "function saveLightBlock(index) { var xhr = new XMLHttpRequest(); xhr.onload = function(){ eval(xhr.responseText); }; xhr.open('post', '/settings', true);\n" \
-  "var d = new FormData();" \
+  "element.innerHTML=s;\n" \
+  "document.getElementById('transition-' + index ).options[ transition ].selected=true;}\n" \
+  "function saveLightBlock(index) {var xhr=new XMLHttpRequest(); xhr.onload=function(){eval(xhr.responseText);}; xhr.open('post', '/settings', true);\n" \
+  "var d=new FormData();" \
   "d.append('save', 'true');" \
   "d.append('index', index);" \
   "d.append('displayName', document.getElementById('displayName-' + index).value);"  \
@@ -114,28 +117,55 @@
   "xhr.send(d);\n" \
   "return false;\n" \
   "}\n" \
-  "function showSNV(section, label, value) { var secId = 'section-' + section.replace(/ /g, '-'); var labelId = secId + '-label-' + label.replace(/ /g, '-'); " \
-  "var sec = document.getElementById(secId); " \
-  "if (sec===null) { var element = document.createElement('fieldset'); element.id = secId; var titl=document.createElement('legend'); titl.innerHTML = section; titl.className = 'secTitle'; element.appendChild(titl); document.getElementById(\"snv\").appendChild(element); sec = document.getElementById(secId); };" \
-  "var lab = document.getElementById(labelId); " \
-  "if (lab===null) { var element = document.createElement('div'); element.id = labelId; sec.appendChild(element); lab = document.getElementById(labelId); };" \
-  "lab.innerHTML =  '<span class=snvName>' + label + '&nbsp;:&nbsp;</span><span class=snvValue>' + value + '</span>'" \
+  "function showSNV(section, label, value) {var secId='section-' + section.replace(/ /g, '-'); var labelId=secId + '-label-' + label.replace(/ /g, '-'); " \
+  "var sec=document.getElementById(secId); " \
+  "if (sec===null) {var element=document.createElement('fieldset'); element.id=secId; var titl=document.createElement('legend'); titl.innerHTML=section; titl.className='secTitle'; element.appendChild(titl); document.getElementById(\"snv\").appendChild(element); sec=document.getElementById(secId);};" \
+  "var lab=document.getElementById(labelId); " \
+  "if (lab===null) {var element=document.createElement('div'); element.id=labelId; sec.appendChild(element); lab=document.getElementById(labelId);};" \
+  "lab.innerHTML='<span class=snvName>' + label + '&nbsp;:&nbsp;</span><span class=snvValue>' + value + '</span>'" \
   "}\n"
+
+#ifdef INLINE_HTML_RESOURCE
+
+#define HTML_COMMON_RESOURCES \
+  "<script>\n" HTML_COMMON1_JS "\n</script>\n" \
+  "<style>\n" HTML_COMMON_CSS "\n</style>"
+
+#define HTML_SETTINGS_RESOURCES \
+  "<script>\n" HTML_SETTINGS_JS "\n</script>\n"
+
+const char RES_COMMON1_JS[] PROGMEM = "";
+const char RES_SETTINGS_JS[] PROGMEM = "";
+const char RES_COMMON_CSS[] PROGMEM = "";
+
+#else
+
+#define HTML_COMMON_RESOURCES \
+  "<script type=\"text/javascript\" src=\"/res?file=common1.js\"></script>\n" \
+  "<link id=\"maincss\" type=\"text/css\" rel=\"stylesheet\" href=\"/res?file=common.css\">\n"
+
+#define HTML_SETTINGS_RESOURCES \
+  "<script type=\"text/javascript\" src=\"/res?file=settings.js\"></script>\n"
+
+const char RES_COMMON1_JS[] PROGMEM = HTML_COMMON1_JS;
+const char RES_SETTINGS_JS[] PROGMEM = HTML_SETTINGS_JS;
+const char RES_COMMON_CSS[] PROGMEM = HTML_COMMON_CSS;
+
+#endif
 
 #define HTML_HEAD_TITLE_RESOURCES \
   "<meta name=\"viewport\" content = \"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">" \
   "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge, chrome=1\"/>" \
   "<link rel=\"icon\" href=\"data:;base64,iVBORw0KGgo=\">" \
-  "<script>\n" HTML_COMMON1_JS "\n</script>\n" \
-  "<style>\n" HTML_COMMON_CSS "\n</style>" \
+  HTML_COMMON_RESOURCES \
   "<title>Led Strip Lights</title>"
 
-// This is the preferred way as it reduces the size of the firmware - but the webserver backlog needs config.
-//"<script type=\"text/javascript\" src=\"/res?file=common1.js\"></script>\n" \
-//"<link id=\"maincss\" type=\"text/css\" rel=\"stylesheet\" href=\"/res?file=common.css\">\n" \
-// This is the non preferred way to add CSS
-// "<style>\n" HTML_COMMON_CSS "\n</style>" \
-
+#define HTML_HEAD_TITLE_RESOURCES \
+  "<meta name=\"viewport\" content = \"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">" \
+  "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge, chrome=1\"/>" \
+  "<link rel=\"icon\" href=\"data:;base64,iVBORw0KGgo=\">" \
+  HTML_COMMON_RESOURCES \
+  "<title>Led Strip Lights</title>"
 
 #define HTML_BODY_HEADER \
   "<div style=\"text-align:left;display:inline-block;min-width:340px;\"><div style=\"text-align:center;\"><h3>Led Strip Lights</h3>" \
@@ -156,17 +186,14 @@
   "<a href=\"/reboot\">[ Reboot ]</a>" \
   "</div>"
 
-const char RES_COMMON1_JS[] PROGMEM = HTML_COMMON1_JS;
-const char RES_SETTINGS_JS[] PROGMEM = HTML_SETTINGS_JS;
-const char RES_COMMON_CSS[] PROGMEM = HTML_COMMON_CSS;
 
 const char INDEX_HTML[] PROGMEM =
   "<!DOCTYPE HTML>\n<html>"
   HTML_HEAD_BEGIN
   HTML_HEAD_TITLE_RESOURCES
   "<script>\n"
-  "function refreshLS(){ var xhr = new XMLHttpRequest(); xhr.onload = function(){ eval(xhr.responseText);}; xhr.open ('POST', '/', true); var d = new FormData(); d.append('refresh','true'); xhr.send(d); return false;}\n"
-  "if(window.addEventListener){ window.addEventListener('load', function(){ setTimeout(refreshLS, 150);  }) } else { window.attachEvent('onload', function() { setTimeout(refreshLS, 150);  }) }\n"
+  "function refreshLS(){var xhr = new XMLHttpRequest(); xhr.onload = function(){eval(xhr.responseText);}; xhr.open ('POST', '/', true); var d = new FormData(); d.append('refresh','true'); xhr.send(d); return false;}\n"
+  "if(window.addEventListener){window.addEventListener('load', function(){setTimeout(refreshLS, 150);})} else {window.attachEvent('onload', function() {setTimeout(refreshLS, 150);})}\n"
   "</script>\n"
   HTML_HEAD_END
   "<body>"
@@ -184,8 +211,8 @@ const char REBOOTING_HTML[] PROGMEM =
   HTML_HEAD_BEGIN
   HTML_HEAD_TITLE_RESOURCES
   "<script>"
-  "function processQS(){ var url = window.location.href; if (url.indexOf('reboot=msg') > 0) { displayMsg('Rebooting.... Please wait 20 seconds<br>If fails, wait 60 seconds before restarting'); setTimeout(function(){location.href=\"/\"},20000); }}\n"
-  "if(window.addEventListener){ window.addEventListener('load', function(){ setTimeout(processQS, 150);  }) } else { window.attachEvent('onload', function() { setTimeout(processQS, 150); }) }\n"
+  "function processQS(){var url = window.location.href; if (url.indexOf('reboot=msg') > 0) {displayMsg('Rebooting.... Please wait 20 seconds<br>If fails, wait 60 seconds before restarting'); setTimeout(function(){location.href=\"/\"},20000);}}\n"
+  "if(window.addEventListener){window.addEventListener('load', function(){setTimeout(processQS, 150);})} else {window.attachEvent('onload', function() {setTimeout(processQS, 150);})}\n"
   "</script>"
   HTML_HEAD_END
   "<body>"
@@ -202,10 +229,10 @@ const char SHOWMQTT_HTML[] PROGMEM =
   "<html>"
   HTML_HEAD_BEGIN
   HTML_HEAD_TITLE_RESOURCES
-  "<script>\n" HTML_SETTINGS_JS "\n</script>\n"
+  HTML_SETTINGS_RESOURCES
   "<script>\n"
-  "function refreshSettings() { var xhr = new XMLHttpRequest();  xhr.onload = function(){ eval(xhr.responseText); }; xhr.open ('POST', '/showmqtt', true); var d = new FormData(); d.append('refresh', 'true');  xhr.send(d); return false;}\n"
-  "if(window.addEventListener){window.addEventListener('load', function() { setTimeout(refreshSettings, 150);})}else{window.attachEvent('onload', function() { setTimeout(refreshSettings, 150); })};\n"
+  "function refreshSettings() {var xhr = new XMLHttpRequest();  xhr.onload = function(){eval(xhr.responseText);}; xhr.open ('POST', '/showmqtt', true); var d = new FormData(); d.append('refresh', 'true');  xhr.send(d); return false;}\n"
+  "if(window.addEventListener){window.addEventListener('load', function() {setTimeout(refreshSettings, 150);})}else{window.attachEvent('onload', function() {setTimeout(refreshSettings, 150);})};\n"
   "</script>\n"
   HTML_HEAD_END
   "<body>"
@@ -222,11 +249,9 @@ const char SETTINGS_HTML[] PROGMEM =
   "<html>"
   HTML_HEAD_BEGIN
   HTML_HEAD_TITLE_RESOURCES
-  "<script>\n" HTML_SETTINGS_JS "\n</script>\n"
-// This is the preferred way as it reduces the size of the firmware - but the webserver backlog needs config.
-//"<script type=\"text/javascript\" src=\"/res?file=settings.js\"></script>\n"
+  HTML_SETTINGS_RESOURCES
   "<script>\n"
-  "function refreshSettings() { var xhr = new XMLHttpRequest();  xhr.onload = function(){ eval(xhr.responseText); }; xhr.open ('POST', '/settings', true); var d = new FormData(); d.append('refresh', 'true');  xhr.send(d); return false;}\n"
+  "function refreshSettings() {var xhr = new XMLHttpRequest();  xhr.onload = function(){eval(xhr.responseText);}; xhr.open ('POST', '/settings', true); var d = new FormData(); d.append('refresh', 'true');  xhr.send(d); return false;}\n"
   "if(window.addEventListener){window.addEventListener('load', function() {setTimeout(refreshSettings, 150);})}else{window.attachEvent('onload', function() {setTimeout(refreshSettings, 150)})};\n"
   "</script>\n"
   HTML_HEAD_END
@@ -278,11 +303,11 @@ const char LIGHT_SETTINGS_HTML[] PROGMEM =
   "<html>"
   HTML_HEAD_BEGIN
   HTML_HEAD_TITLE_RESOURCES
-  "<script>\n" HTML_SETTINGS_JS "\n</script>\n"
+  HTML_SETTINGS_RESOURCES
   "<script>\n"
   "var formUrl = \"/settings\";\n"
   "var formMethod = 'POST';\n"
-  "function refreshLightSettings() { var xhr = new XMLHttpRequest(); xhr.onload = function(){ eval(xhr.responseText); }; xhr.open ('post', '/lightsettings', true); var d = new FormData(); d.append('refresh', 'true');  xhr.send(d); return false; }\n"
+  "function refreshLightSettings() {var xhr = new XMLHttpRequest(); xhr.onload = function(){eval(xhr.responseText);}; xhr.open ('post', '/lightsettings', true); var d = new FormData(); d.append('refresh', 'true');  xhr.send(d); return false;}\n"
   "if(window.addEventListener){window.addEventListener('load', function() {setTimeout(refreshLightSettings, 150);})}else{window.attachEvent('onload', function() {setTimeout(refreshLightSettings, 150);})};\n"
   "</script>\n"
   HTML_HEAD_END
