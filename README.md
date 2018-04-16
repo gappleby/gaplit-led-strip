@@ -114,17 +114,17 @@ Technically any ESP8266 board that will run Sonoff-Tasmota will run this firmwar
 * Full > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.bin)
 * Minimal > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip-minimal.bin)
 
-  This project was initially built for the Wemos D1 R2 board to drive a WS2812B LED Strip to provide a set of virtual lights. By default it uses PIN D1 as a signal PIN for the WS2812B.  
-  Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-wemos.png?raw=true).
+This project was initially built for the Wemos D1 R2 board to drive a WS2812B LED Strip to provide a set of virtual lights. By default it uses PIN D1 as a signal PIN for the WS2812B.  
+Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-wemos.png?raw=true).
 
-  It can also be configured to be used with a Sonoff Basic (and POW/Dual/etc) where the spare GPIO 14 pin is used to control the LED Strip. 
+It can also be configured to be used with a Sonoff Basic (and POW/Dual/etc) where the spare GPIO 14 pin is used to control the LED Strip. 
 
-  With the Sonoff, you can utilise  the relay to switch the LED  power supply on and off. This will save power when all the virtual lights are off. 
-  Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-sonoff.png?raw=true).
+With the Sonoff, you can utilise the relay to switch the LED  power supply on and off. This will save power when all the virtual lights are off. 
+Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-sonoff.png?raw=true).
 
 ## LED Strip
 
- This has been tested with a 300 LED Strip based on WS2812b. As it uses the NeoPixel library, it wouldn't be hard to support other multiple color strips
+This has been tested with a 300 LED Strip based on WS2812b. As it uses the NeoPixel library, it wouldn't be hard to support other multiple color strips
 
 ## Libraries
 
