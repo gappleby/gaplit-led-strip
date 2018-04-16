@@ -27,11 +27,11 @@ const CRGB black = { 0x0, 0x0, 0x0};
 class ColoredLightSegment : public LightSegment {
 
   public:
-    auto setPixelOnColor(CRGB color) {
+    auto setPixelOnColor(CRGB color) -> ColoredLightSegment * {
       pixelOn = color;
       return this;
     }
-    auto setPixelOffColor(CRGB color) {
+    auto setPixelOffColor(CRGB color) -> ColoredLightSegment * {
       pixelOff = color;
       return this;
     }
@@ -43,7 +43,7 @@ class ColoredLightSegment : public LightSegment {
       return pixelOff;
     }
 
-    auto setTransitionType(uint8_t transitionType) {
+    auto setTransitionType(uint8_t transitionType) -> ColoredLightSegment * {
       if (transitionType > 6) transitionType = 0; //default to on/off
 
       this->transitionType = transitionType;

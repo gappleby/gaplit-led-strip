@@ -111,11 +111,12 @@ There is also a couple of other URLs not available in the menus.
 
 Technically any ESP8266 board that will run Sonoff-Tasmota will run this firmware.
 
-* Wemos D1 R2 > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.ino.d1_mini.bin)
+* Full > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.bin)
+* Minimal > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip-minimal.bin)
+
   This project was initially built for the Wemos D1 R2 board to drive a WS2812B LED Strip to provide a set of virtual lights. By default it uses PIN D1 as a signal PIN for the WS2812B.  
   Set the GPIO configuration to look like these in the [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2-wemos.png?raw=true).
 
-* Sonoff > [Download latest compiled version](https://raw.githubusercontent.com/gappleby/gaplit-led-strip/master/releases/stable/gaplit-led-strip.ino.generic.bin)
   It can also be configured to be used with a Sonoff Basic (and POW/Dual/etc) where the spare GPIO 14 pin is used to control the LED Strip. 
 
   With the Sonoff, you can utilise  the relay to switch the LED  power supply on and off. This will save power when all the virtual lights are off. 
@@ -180,9 +181,10 @@ See [Sonoff-Tasmota Wiki](https://github.com/arendst/Sonoff-Tasmota/wiki/Theo's-
 
 - Version 3.0 - Light Transition - Async WebServer, Async MQTT, NeoPixel. Added transitions to each of the light segments.  Refactored the code to contain the logic for relay and light segments into their own objects.
 
+- Version 3.0.2 - PlatformIO - Added support for PlatformIO builds in addition to the Arduino.
+
 ### Issues
 
-- Density logic has not been fully tested for each animation.
 - The tracer logic has not been re-implemented.
 
 ## License

@@ -57,27 +57,27 @@ class LightSegment {
       return density;
     }
 
-    auto setDensity(int density) {
+    auto setDensity(int density) -> LightSegment * {
       this->density = density;
       return this;
     }
 
-    auto setNumPixels(int n) {
+    auto setNumPixels(int n)  -> LightSegment * {
       numPixels = n;
       reset();
       return this;
     }
-    auto setStartPixel(int n) {
+    auto setStartPixel(int n)  -> LightSegment * {
       startPixel = n;
       reset();
       return this;
     }
-    auto setEndPixel(int n) {
+    auto setEndPixel(int n)  -> LightSegment * {
       endPixel = n;
       reset();
       return this;
     }
-    auto setStartEndPixel(int startPixel, int endPixel) {
+    auto setStartEndPixel(int startPixel, int endPixel)  -> LightSegment * {
       this->startPixel = startPixel;
       this->endPixel = endPixel;
 
@@ -137,7 +137,7 @@ class LightSegment {
       if (pixels) delete [] pixels;
     }
 
-    auto setState(LightSegmentExpiredState state) {
+    auto setState(LightSegmentExpiredState state)  -> LightSegment * {
       this->state = state;
       return this;
     }
@@ -148,7 +148,7 @@ class LightSegment {
       return (state == ACTIVE);
     }
 
-    auto setIndex(int index) {
+    auto setIndex(int index)  -> LightSegment * {
       this->index = index;
       return this;
     }
@@ -156,7 +156,7 @@ class LightSegment {
       return index;
     }
 
-    auto setMqttId(int mqttId) {
+    auto setMqttId(int mqttId)  -> LightSegment * {
       this->mqttId = mqttId;
       return this;
     }
@@ -164,7 +164,7 @@ class LightSegment {
       return mqttId;
     }
 
-    auto setSerialDebug(bool debugOn) {
+    auto setSerialDebug(bool debugOn)  -> LightSegment * {
       debug_serial_output = debugOn;
       return this;
     }

@@ -84,7 +84,7 @@
     "element.id='lightSet-' + index;" \
     "var fs=document.createElement('fieldset'); " \
     "var fsLabel=document.createElement('legend'); fsLabel.innerHTML =label; fsLabel.className='secTitle'; fs.appendChild(fsLabel); fs.appendChild(element);" \
-    "var settings=document.getElementById('settings');\n" \ 
+    "var settings=document.getElementById('settings');\n" \
     "settings.appendChild(fs);\n" \
   "}\n" \
   "var s=\"\";" \
@@ -176,6 +176,17 @@ const char RES_COMMON_CSS[] PROGMEM = HTML_COMMON_CSS;
   "<div style='text-align:right;font-size:11px;'><hr><a href='https://www.gappleby.com/light/GapLit' target='_blank' style='color:#aaa;'><span id=version></span></a></div>" \
   "</div>"
 
+#ifdef BE_MINIMAL
+
+#define HTML_MENU \
+  "<div style='text-align:center;'>" \
+  "<a href=\"/\">[ Home ]</a> " \
+  "<a href=\"/webupdate\">[ Update Firmware ]</a> " \
+  "<a href=\"/reboot\">[ Reboot ]</a>" \
+  "</div>"
+
+#else 
+
 #define HTML_MENU \
   "<div style='text-align:center;'>" \
   "<a href=\"/\">[ Home ]</a> " \
@@ -186,6 +197,7 @@ const char RES_COMMON_CSS[] PROGMEM = HTML_COMMON_CSS;
   "<a href=\"/reboot\">[ Reboot ]</a>" \
   "</div>"
 
+#endif
 
 const char INDEX_HTML[] PROGMEM =
   "<!DOCTYPE HTML>\n<html>"
@@ -223,6 +235,40 @@ const char REBOOTING_HTML[] PROGMEM =
   "</body>"
   "</html>";
 
+#ifdef BE_MINIMAL
+
+const char SHOWMQTT_HTML[] PROGMEM =
+  "<!DOCTYPE HTML>"
+  "<html>"
+  "<body>"
+  HTML_BODY_HEADER
+  HTML_MENU
+  HTML_BODY_FOOTER
+  "</body>"
+  "</html>";
+
+const char SETTINGS_HTML[] PROGMEM =
+  "<!DOCTYPE HTML>"
+  "<html>"
+  "<body>"
+  HTML_BODY_HEADER
+  HTML_MENU
+  HTML_BODY_FOOTER
+  "</body>"
+  "</html>";
+
+
+const char LIGHT_SETTINGS_HTML[] PROGMEM =
+  "<!DOCTYPE HTML>"
+  "<html>"
+  "<body>"
+  HTML_BODY_HEADER
+  HTML_MENU
+  HTML_BODY_FOOTER
+  "</body>"
+  "</html>";
+
+#else
 
 const char SHOWMQTT_HTML[] PROGMEM =
   "<!DOCTYPE HTML>"
@@ -242,7 +288,6 @@ const char SHOWMQTT_HTML[] PROGMEM =
   HTML_BODY_FOOTER
   "</body>"
   "</html>";
-
 
 const char SETTINGS_HTML[] PROGMEM =
   "<!DOCTYPE HTML>"
@@ -296,8 +341,6 @@ const char SETTINGS_HTML[] PROGMEM =
   "</body>"
   "</html>";
 
-
-
 const char LIGHT_SETTINGS_HTML[] PROGMEM =
   "<!DOCTYPE HTML>"
   "<html>"
@@ -319,6 +362,9 @@ const char LIGHT_SETTINGS_HTML[] PROGMEM =
   HTML_BODY_FOOTER
   "</body>"
   "</html>";
+
+#endif
+
 
 
 const char LIGHT_BULB_ON_SVG[] PROGMEM =
