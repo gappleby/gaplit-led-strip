@@ -12,8 +12,8 @@ Configure an ESP8266 module to control up to 8 virtual light segments in a singl
 - Firmware can be updated OTA via the web interface.
 
 ## Screen Shots
-- [Home](http://www.gappleby.com/light/GapLit/screen1.png)
-![picture alt](http://www.gappleby.com/light/GapLit/screen1.png "GapLit led Strip")
+- [Home](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen1.png?raw=true)
+![picture alt](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen1.png?raw=true "GapLit led Strip")
 - [General Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen2.png?raw=true) 
 - [Light Settings](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen4.png?raw=true) 
 - [MQTT Summary](https://github.com/gappleby/gaplit-led-strip/blob/master/releases/pics/screen5.png?raw=true)
