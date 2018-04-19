@@ -658,6 +658,9 @@ void LocalWebsite::handleShowMqttRefresh(AsyncWebServerRequest *request)
   d += "showSNV('Global', 'MQTT State off', '" +  String(_settings->settings.mqtt_state_text[0]) + "');";
   d += "showSNV('Global', 'MQTT State on', '" +  String(_settings->settings.mqtt_state_text[1]) + "');";
   for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
+    if (_settings->settings.ls_topicIndex[n] == 0) { 
+      continue; 
+    }
     char topic[120];
     String suffix = String(MQTT_SUFFIX);
     suffix += String(_settings->settings.ls_topicIndex[n]);
@@ -665,6 +668,9 @@ void LocalWebsite::handleShowMqttRefresh(AsyncWebServerRequest *request)
     d += "showSNV('States', 'Light " + String(n + 1) + "', '" +  String(topic) + "');";
   }
   for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
+    if (_settings->settings.ls_topicIndex[n] == 0) { 
+      continue; 
+    }
     char topic[120];
     String suffix = String(MQTT_SUFFIX);
     suffix += String(_settings->settings.ls_topicIndex[n]);
@@ -672,6 +678,9 @@ void LocalWebsite::handleShowMqttRefresh(AsyncWebServerRequest *request)
     d += "showSNV('Commands', 'Light " + String(n + 1) + "', '" +  String(topic) + "');";
   }
   for (int n = 0; n < LIGHT_SEGMENTS_MAX; n++) {
+    if (_settings->settings.ls_topicIndex[n] == 0) { 
+      continue; 
+    }
     d += "showSNV('Topic IDs', 'Light " + String(n + 1) + "', '" +  (_settings->settings.ls_topicIndex[n] > 0 ? String(_settings->settings.ls_topicIndex[n]) : String("disabled")) + "');";
   }
 

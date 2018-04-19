@@ -79,10 +79,6 @@ AsyncWebServer httpServer(80);
 DNSServer dns;
 LocalWebsite httpLocalWebsite;
 
-// Wifi Manager will try to connect to the saved AP. If that fails, it will start up as an AP
-// which you can connect to and setup the wifi
-AsyncWiFiManager wifiManager(&httpServer, &dns);
-
 // Wifi Client
 WiFiClient wifiClient;
 
@@ -123,7 +119,7 @@ void setup() {
   // Setup Status LED
   if (settings.settings.status_light_gpio >= 0) pinMode(settings.settings.status_light_gpio, OUTPUT);
   blinkTimer.attach(0.5, blinkLedEvent);
-  blinkLed(5, 100);
+  blinkLed(1);
 
   // Configure settings
   settings.composeSetting(mqtt_client, settings.settings.mqtt_client, sizeof(mqtt_client));
@@ -147,9 +143,23 @@ void setup() {
   // Set up the MQTT Client
   setupMqtt();
 
+  // Wifi Manager will try to connect to the saved AP. If that fails, it will start up as an AP
+  // which you can connect to and setup the wifi
+  AsyncWiFiManager wifiManager(&httpServer, &dns);
+
+  wifiManager.setDebugOutput(debug_serial_output);
+
   // Set the wifi config portal to only show for 3 minutes, then continue.
   wifiManager.setConfigPortalTimeout(180);
-  wifiManager.autoConnect(host_name);
+  if(!wifiManager.autoConnect(host_name)) {
+    Serial.println("\nWifiManager: STA failed to connect and hit timeout");
+    delay(3000);
+    blinkLed(2);
+    //reset and try again, or maybe put it to deep sleep
+    ESP.reset();
+    delay(5000);
+  }
+  blinkLed(3);
 
   // Setup the URLs
   httpLocalWebsite.setup(&httpServer, &settings);
@@ -223,7 +233,7 @@ void reloadLightSegment(int n) {
     ->setIndex(n)
     ->setStartEndPixel(settings.settings.ls_startPixel[n], settings.settings.ls_endPixel[n])
     ->setMqttId(settings.settings.ls_topicIndex[n])
-    ->setDensity(settings.settings.ls_topicIndex[n])
+    ->setDensity(settings.settings.ls_density[n])
     ->setSerialDebug(false);
 
     lightSegment->setLightState(false);
@@ -489,7 +499,7 @@ void blinkLedEvent()
 //
 // Blink the led the number multiple times.
 //
-void blinkLed(int blinkCount, int period)
+void blinkLed(int blinkCount)
 {
   blinks = blinkCount;
 }
@@ -645,7 +655,7 @@ void reconnectWifi() {
   }
 
   if (debug_serial_output) Serial.printf("\nWifi : Not connected - trying autoConnect with hostname %s\n", host_name);
-  wifiManager.autoConnect(host_name);
+  //wifiManager.autoConnect(host_name);
 
   // Connect to MQTT
   if ( WiFi.status() != WL_CONNECTED ) {
