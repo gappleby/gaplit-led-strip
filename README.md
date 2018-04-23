@@ -183,6 +183,8 @@ See [Sonoff-Tasmota Wiki](https://github.com/arendst/Sonoff-Tasmota/wiki/Theo's-
 
 - Version 3.0.2 - PlatformIO - Added support for PlatformIO builds in addition to the Arduino.
 
+- Version 3.0.3 - Minor fix - Fixed RGB order in config.
+
 ### Issues
 
 - The tracer logic has not been re-implemented.

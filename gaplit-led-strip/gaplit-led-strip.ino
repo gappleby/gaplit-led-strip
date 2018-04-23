@@ -173,7 +173,7 @@ void setup() {
   mqttResendTimer.attach(STATUS_RESEND_PERIOD / 1000, publishLightStates);
 
   // Trigger the light segments
-  updateLightSegmentsTimer.attach(0.02, transitionLeds);
+  updateLightSegmentsTimer.attach(0.015, transitionLeds);
 
 }
 

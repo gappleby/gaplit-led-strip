@@ -23,7 +23,7 @@ typedef enum _LightSegmentExpiredState { INIT, ACTIVE, RETIRED } LightSegmentExp
 #define MAX_TRANSITIONS_STATES  100
 
 typedef struct _CRGB {
-  byte r;  byte b;  byte g;
+  byte r;  byte g;  byte b;
 } CRGB;
 
 
