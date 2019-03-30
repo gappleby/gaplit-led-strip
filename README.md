@@ -185,6 +185,8 @@ See [Sonoff-Tasmota Wiki](https://github.com/arendst/Sonoff-Tasmota/wiki/Theo's-
 
 - Version 3.0.3 - Minor fix - Fixed RGB order in config.
 
+- Version 3.0.4 - Auth Fix - fixed the login code for MQTT.  Updated to support latest PlatformIO.  Refreshed external libraries
+
 ### Issues
 
 - The tracer logic has not been re-implemented.

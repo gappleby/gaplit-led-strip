@@ -108,7 +108,7 @@ class RelayControl {
         return getRelayState();
       }
 
-      if (debug_serial_output) Serial.printf("\nRelay : Delay Complete start=%u end=%u now=%u state=%s", startTime, endTime, millis(), state ? "true" : "false");
+      if (debug_serial_output) Serial.printf("\nRelay : Delay Complete start=%u end=%u now=%ul state=%s", startTime, endTime, millis(), state ? "true" : "false");
 
       startTime = endTime;
 

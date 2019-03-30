@@ -38,7 +38,7 @@
 #endif
 
 
-#define VERSION                 0x03000003
+#define VERSION                 0x03000004
 #define LIGHT_SEGMENTS_MAX      8
 #define MAX_PIXELS_DEFAULT      100
 #define DISPLAY_NAME_MAX_LEN    33

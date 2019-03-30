@@ -195,6 +195,7 @@ void setupMqtt() {
   mqttClient.onMessage(onMqttMessage);
   mqttClient.onPublish(onMqttPublish);
   mqttClient.setServer(settings.settings.mqtt_host, settings.settings.mqtt_port);
+  mqttClient.setCredentials(settings.settings.mqtt_user, settings.settings.mqtt_pwd);
 }
 
 void initializeRelay() {

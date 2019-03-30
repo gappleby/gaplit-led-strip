@@ -22,8 +22,22 @@
 #define ESP_WPS_MODE WPS_TYPE_PBC
 #endif
 #include <ESPAsyncWebServer.h>
+
+//#define USE_EADNS               //Uncomment to use ESPAsyncDNSServer
+#ifdef USE_EADNS
+#include <ESPAsyncDNSServer.h>    //https://github.com/devyte/ESPAsyncDNSServer
+                                  //https://github.com/me-no-dev/ESPAsyncUDP
+#else
 #include <DNSServer.h>
+#endif
 #include <memory>
+
+// fix crash on ESP32 (see https://github.com/alanswx/ESPAsyncWiFiManager/issues/44)
+#if defined(ESP8266)
+typedef int wifi_ssid_count_t;
+#else
+typedef int16_t wifi_ssid_count_t;
+#endif
 
 #if defined(ESP8266)
 extern "C" {
@@ -93,7 +107,11 @@ public:
 class AsyncWiFiManager
 {
 public:
+  #ifdef USE_EADNS
+  AsyncWiFiManager(AsyncWebServer * server, AsyncDNSServer *dns);
+  #else
   AsyncWiFiManager(AsyncWebServer * server, DNSServer *dns);
+  #endif
 
   void          scan();
   String        scanModal();
@@ -102,8 +120,8 @@ public:
   void          criticalLoop();
   String        infoAsString();
 
-  boolean       autoConnect();
-  boolean       autoConnect(char const *apName, char const *apPassword = NULL);
+  boolean       autoConnect(unsigned long maxConnectRetries = 1, unsigned long retryDelayMs = 1000);
+  boolean       autoConnect(char const *apName, char const *apPassword = NULL, unsigned long maxConnectRetries = 1, unsigned long retryDelayMs = 1000);
 
   //if you want to always start the config portal, without trying to connect first
   boolean       startConfigPortal(char const *apName, char const *apPassword = NULL);
@@ -123,6 +141,10 @@ public:
   //sets timeout for which to attempt connecting, usefull if you get a lot of failed connects
   void          setConnectTimeout(unsigned long seconds);
 
+  //wether or not the wifi manager tries to connect to configured access point even when
+  //configuration portal (ESP as access point) is running [default true/on]
+  void          setTryConnectDuringConfigPortal(boolean v);
+
 
   void          setDebugOutput(boolean debug);
   //defaults to not showing anything under 8% signal quality if called
@@ -130,7 +152,7 @@ public:
   //sets a custom ip /gateway /subnet configuration
   void          setAPStaticIPConfig(IPAddress ip, IPAddress gw, IPAddress sn);
   //sets config for a static IP
-  void          setSTAStaticIPConfig(IPAddress ip, IPAddress gw, IPAddress sn);
+  void          setSTAStaticIPConfig(IPAddress ip, IPAddress gw, IPAddress sn, IPAddress dns1=(uint32_t)0x00000000, IPAddress dns2=(uint32_t)0x00000000);
   //called when AP mode and config portal is started
   void          setAPCallback( void (*func)(AsyncWiFiManager*) );
   //called when settings have been changed and connection was successful
@@ -147,8 +169,12 @@ public:
   void          setRemoveDuplicateAPs(boolean removeDuplicates);
 
 private:
-  DNSServer      *dnsServer;
   AsyncWebServer *server;
+  #ifdef USE_EADNS
+  AsyncDNSServer      *dnsServer;
+  #else
+  DNSServer      *dnsServer;
+  #endif
 
 
   boolean         _modeless;
@@ -162,8 +188,9 @@ private:
   //const String  HTTP_HEAD = "<!DOCTYPE html><html lang=\"en\"><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><title>{v}</title>";
 
   void          setupConfigPortal();
+#ifdef NO_EXTRA_4K_HEAP
   void          startWPS();
-
+#endif
   String        pager;
   wl_status_t   wifiStatus;
   const char*   _apName                 = "no-net";
@@ -180,13 +207,16 @@ private:
   IPAddress     _sta_static_ip;
   IPAddress     _sta_static_gw;
   IPAddress     _sta_static_sn;
+  IPAddress     _sta_static_dns1= (uint32_t)0x00000000;
+  IPAddress     _sta_static_dns2= (uint32_t)0x00000000;
 
   int           _paramsCount            = 0;
   int           _minimumQuality         = -1;
   boolean       _removeDuplicateAPs     = true;
   boolean       _shouldBreakAfterConfig = false;
+#ifdef NO_EXTRA_4K_HEAP
   boolean       _tryWPS                 = false;
-
+#endif
   const char*   _customHeadElement      = "";
 
   //String        getEEPROMString(int start, int len);
@@ -219,9 +249,11 @@ private:
   boolean       connect;
   boolean       _debug = true;
 
-  WiFiResult    *wifiSSIDs;
-  int           wifiSSIDCount;
-  boolean       wifiSSIDscan;
+  WiFiResult          *wifiSSIDs;
+  wifi_ssid_count_t   wifiSSIDCount;
+  boolean             wifiSSIDscan;
+
+  boolean             _tryConnectDuringConfigPortal = true;
 
   void (*_apcallback)(AsyncWiFiManager*) = NULL;
   void (*_savecallback)(void) = NULL;
